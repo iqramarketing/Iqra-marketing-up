@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iqra Marketing - Wholesale & Partial Return</title>
+    <title>Iqra Marketing - Final Pro</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -20,14 +20,34 @@
         .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); }
         .container { padding: 15px; max-width: 800px; margin: 0 auto; }
         .card { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 15px; position: relative; border: 1px solid #e2e8f0; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-box { padding: 18px; border-radius: 12px; color: white; text-align: center; }
+        .blue { background: #4f46e5; } .green { background: #10b981; }
         input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 1rem; box-sizing: border-box; }
         .btn-main { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 10px; color: white; }
         .details-pane { display: none; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc; font-size: 0.9rem; }
         .sale-card.active .details-pane { display: block; }
         .item-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+        #pdf-template { position: absolute; left: -9999px; width: 595px; background: white; padding: 40px; color: black; }
     </style>
 </head>
 <body>
+
+<div id="pdf-template">
+    <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
+        <h1 style="margin:0;">IQRA MARKETING</h1>
+        <p>Karuvanpadi - 679303 | Ph: 8089305300</p>
+    </div>
+    <div style="display: flex; justify-content: space-between;">
+        <span><b>Customer:</b> <span id="pdf-cust"></span></span>
+        <span><b>Date:</b> <span id="pdf-date"></span></span>
+    </div>
+    <table style="width:100%; border-collapse: collapse; margin-top: 20px; border: 1px solid #444;">
+        <thead><tr style="background:#f2f2f2;"><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+        <tbody id="pdf-items"></tbody>
+    </table>
+    <h2 style="text-align: right; margin-top: 25px;">Total: ₹<span id="pdf-total"></span></h2>
+</div>
 
 <div class="header">
     <div class="logo-box">IQRA</div>
@@ -43,6 +63,11 @@
 
 <div class="container">
     <div id="sec-home">
+        <div class="stats">
+            <div class="stat-box blue"><h6>Stock Value</h6><h3 id="ds-stock">₹ 0</h3></div>
+            <div class="stat-box green"><h6>Today Sales</h6><h3 id="ds-sale">₹ 0</h3></div>
+        </div>
+        <h4 style="margin: 20px 0 10px;">Recent Transactions</h4>
         <div id="recent-list"></div>
     </div>
 
@@ -50,7 +75,7 @@
         <div class="card">
             <h3>New Invoice</h3>
             <input type="text" id="c-name" placeholder="Customer Name">
-            <select id="item-pick" onchange="updatePriceOptions()"><option value="">Select Item</option></select>
+            <select id="item-pick"><option value="">Select Item</option></select>
             <select id="price-type">
                 <option value="retail">Retail Price</option>
                 <option value="wholesale">Wholesale Price</option>
@@ -67,14 +92,14 @@
 
     <div id="sec-items" style="display:none">
         <div class="card">
-            <h3>Add/Edit Item</h3>
+            <h3>Stock Management</h3>
             <input type="hidden" id="edit-id">
             <input type="text" id="i-name" placeholder="Item Name">
-            <input type="number" id="i-buy" placeholder="Purchase (Buy) Price">
-            <input type="number" id="i-wholesale" placeholder="Wholesale Sale Price">
-            <input type="number" id="i-retail" placeholder="Retail Sale Price">
-            <input type="number" id="i-qty" placeholder="Current Stock Qty">
-            <button class="btn-main" style="background:#3b82f6" onclick="saveItem()">Save to Stock</button>
+            <input type="number" id="i-buy" placeholder="Buy Price">
+            <input type="number" id="i-wholesale" placeholder="Wholesale Price">
+            <input type="number" id="i-retail" placeholder="Retail Price">
+            <input type="number" id="i-qty" placeholder="Qty">
+            <button class="btn-main" style="background:#3b82f6" onclick="saveItem()">Save Stock</button>
         </div>
         <div id="stock-list"></div>
     </div>
@@ -82,7 +107,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = { apiKey: "AIzaSyDmviHo3-oZChgxScf4RTfQ9d8nMNxSgGI", authDomain: "iqra-marketing.firebaseapp.com", projectId: "iqra-marketing" };
     const app = initializeApp(firebaseConfig);
@@ -112,17 +137,27 @@
 
     function renderCart() {
         let b = document.getElementById('cart-items'); b.innerHTML = ''; let t = 0;
-        cart.forEach((c, i) => { 
-            t += c.total; 
-            b.innerHTML += `<div class="item-row"><span>${c.name} (x${c.qty}) - ${c.type}</span> <span>₹${c.total}</span></div>`; 
-        });
+        cart.forEach((c) => { t += c.total; b.innerHTML += `<div class="item-row"><span>${c.name} (x${c.qty})</span> <span>₹${c.total}</span></div>`; });
         document.getElementById('cart-total').innerText = t;
     }
 
+    window.printBill = async (cust, date, total, items) => {
+        document.getElementById('pdf-cust').innerText = cust;
+        document.getElementById('pdf-date').innerText = date;
+        document.getElementById('pdf-total').innerText = total;
+        document.getElementById('pdf-items').innerHTML = items.map(i => `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.rate}</td><td>${i.total}</td></tr>`).join('');
+        const canvas = await html2canvas(document.getElementById('pdf-template'));
+        const pdf = new jspdf.jsPDF();
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 0);
+        pdf.save(`Iqra_${cust}.pdf`);
+    };
+
     window.finishBill = async () => {
         let cust = document.getElementById('c-name').value || "Counter Sale", total = document.getElementById('cart-total').innerText;
+        let date = new Date().toLocaleDateString();
         if(total == "0") return;
-        await addDoc(collection(db, "sales"), { cust, total: parseFloat(total), items: cart, date: new Date().toLocaleDateString(), timestamp: new Date() });
+        await printBill(cust, date, total, cart);
+        await addDoc(collection(db, "sales"), { cust, total: parseFloat(total), items: cart, date, timestamp: new Date() });
         for(let c of cart) {
             let it = inv.find(x => x.id === c.invId);
             if(it) await updateDoc(doc(db, "inventory", it.id), { qty: it.qty - c.qty });
@@ -130,87 +165,61 @@
         location.reload();
     };
 
-    // --- PARTIAL RETURN LOGIC ---
-    window.partialReturn = async (saleId, itemIndex) => {
-        let sale = sales.find(s => s.id === saleId);
-        let item = sale.items[itemIndex];
-        let returnQty = parseFloat(prompt(`How many items of '${item.name}' are returning? (Max: ${item.qty})`));
-
-        if(isNaN(returnQty) || returnQty <= 0 || returnQty > item.qty) {
-            alert("Invalid Quantity!"); return;
-        }
-
+    window.partialReturn = async (saleId, itemIdx) => {
         if(prompt("Admin Password:") !== ADMIN_PW) return;
+        let s = sales.find(x => x.id === saleId), item = s.items[itemIdx];
+        let rQty = parseFloat(prompt(`How many '${item.name}' returning? (Max: ${item.qty})`));
+        if(isNaN(rQty) || rQty > item.qty || rQty <= 0) return;
 
-        // 1. Update Stock
-        let stItem = inv.find(i => i.id === item.invId);
-        if(stItem) await updateDoc(doc(db, "inventory", stItem.id), { qty: stItem.qty + returnQty });
+        let st = inv.find(x => x.id === item.invId);
+        if(st) await updateDoc(doc(db, "inventory", st.id), { qty: st.qty + rQty });
 
-        // 2. Update Sale Record
-        let newItems = [...sale.items];
-        if(returnQty === item.qty) {
-            newItems.splice(itemIndex, 1); // Full item return
-        } else {
-            newItems[itemIndex].qty -= returnQty;
-            newItems[itemIndex].total -= (returnQty * item.rate);
-        }
+        let newItems = [...s.items];
+        if(rQty === item.qty) newItems.splice(itemIdx, 1);
+        else { newItems[itemIdx].qty -= rQty; newItems[itemIdx].total -= (rQty * item.rate); }
 
-        let newTotal = newItems.reduce((acc, curr) => acc + curr.total, 0);
-        
-        if(newItems.length === 0) {
-            await deleteDoc(doc(db, "sales", saleId));
-        } else {
-            await updateDoc(doc(db, "sales", saleId), { items: newItems, total: newTotal });
-        }
-        alert("Return Processed & Stock Updated!");
+        if(newItems.length === 0) await deleteDoc(doc(db, "sales", saleId));
+        else await updateDoc(doc(db, "sales", saleId), { items: newItems, total: newItems.reduce((a,b)=>a+b.total,0) });
     };
 
     function refreshUI() {
-        // Stock List
-        let sList = document.getElementById('stock-list'); sList.innerHTML = '';
-        inv.forEach(it => {
-            sList.innerHTML += `<div class="card" style="display:flex; justify-content:space-between;">
-                <div><b>${it.name}</b><br><small>Stock: ${it.qty}<br>Wholesale: ₹${it.wholesale} | Retail: ₹${it.retail}</small></div>
-                <button onclick="editItem('${it.id}')" style="border:none; background:none; color:blue;"><i class="fa fa-edit"></i></button>
-            </div>`;
-        });
+        let sVal = 0, tSale = 0, today = new Date().toLocaleDateString();
+        inv.forEach(it => sVal += (it.buy * it.qty));
+        document.getElementById('ds-stock').innerText = "₹ " + sVal;
 
-        // Sales List
-        let rList = document.getElementById('recent-list'); rList.innerHTML = '<h4>Recent Sales</h4>';
+        let rList = document.getElementById('recent-list'); rList.innerHTML = '';
         sales.forEach(s => {
+            if(s.date === today) tSale += s.total;
             let div = document.createElement('div');
             div.className = 'card sale-card';
             div.onclick = function(e) { if(!e.target.closest('button')) this.classList.toggle('active'); };
-            div.innerHTML = `
-                <b>${s.cust}</b> <span style="float:right">₹${s.total}</span><br><small>${s.date}</small>
+            div.innerHTML = `<b>${s.cust}</b> <span style="float:right">₹${s.total}</span><br><small>${s.date}</small>
                 <div class="details-pane">
-                    ${s.items.map((i, idx) => `
-                        <div class="item-row">
-                            <span>${i.name} x${i.qty}</span>
-                            <button onclick="partialReturn('${s.id}', ${idx})" style="background:#f59e0b; color:white; border:none; border-radius:4px; padding:2px 8px; font-size:0.7rem;">Return Some</button>
-                        </div>
-                    `).join('')}
-                    <button class="btn-main" style="background:#6366f1; padding:8px;" onclick="location.reload()">Reprint (Full)</button>
+                    ${s.items.map((i, idx) => `<div class="item-row"><span>${i.name} x${i.qty}</span><button onclick="partialReturn('${s.id}',${idx})" style="background:#f59e0b;color:white;border:none;border-radius:5px;padding:3px 8px;">Return</button></div>`).join('')}
+                    <button class="btn-main" style="background:#6366f1" onclick="printBill('${s.cust}','${s.date}','${s.total}',${JSON.stringify(s.items)})">Reprint</button>
                 </div>`;
             rList.appendChild(div);
         });
+        document.getElementById('ds-sale').innerText = "₹ " + tSale;
 
         let sel = document.getElementById('item-pick');
         sel.innerHTML = '<option value="">Select Item</option>';
         inv.forEach((it, i) => sel.innerHTML += `<option value="${i}">${it.name}</option>`);
+        
+        let sList = document.getElementById('stock-list'); sList.innerHTML = '';
+        inv.forEach(it => {
+            sList.innerHTML += `<div class="card" style="display:flex; justify-content:space-between;">
+                <div><b>${it.name}</b><br><small>Stock: ${it.qty} | Wholesale: ₹${it.wholesale} | Retail: ₹${it.retail}</small></div>
+                <button onclick="editItem('${it.id}')" style="border:none;background:none;color:blue;"><i class="fa fa-edit"></i></button>
+            </div>`;
+        });
     }
 
     window.saveItem = async () => {
         let id = document.getElementById('edit-id').value;
-        let data = {
-            name: document.getElementById('i-name').value,
-            buy: parseFloat(document.getElementById('i-buy').value),
-            wholesale: parseFloat(document.getElementById('i-wholesale').value),
-            retail: parseFloat(document.getElementById('i-retail').value),
-            qty: parseFloat(document.getElementById('i-qty').value)
-        };
-        if(id) await updateDoc(doc(db, "inventory", id), data);
-        else await addDoc(collection(db, "inventory"), data);
+        let d = { name: document.getElementById('i-name').value, buy: parseFloat(document.getElementById('i-buy').value), wholesale: parseFloat(document.getElementById('i-wholesale').value), retail: parseFloat(document.getElementById('i-retail').value), qty: parseFloat(document.getElementById('i-qty').value) };
+        if(id) await updateDoc(doc(db, "inventory", id), d);
+        else await addDoc(collection(db, "inventory"), d);
         location.reload();
     };
 
