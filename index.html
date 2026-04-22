@@ -37,7 +37,7 @@
 <div id="loading"><b>Loading...</b></div>
 
 <div class="header">
-    <div class="logo-container"><img src="logo.png" alt="Iqra Logo" onerror="this.parentElement.innerHTML='IQRA'"></div>
+    <div class="logo-container">IQRA</div>
     <div class="shop-info">
         <h1>IQRA MARKETING</h1>
         <p>Karuvanpadi - 679303</p>
@@ -70,18 +70,18 @@
             <input type="text" id="cust-name" placeholder="Customer Name">
             <select id="item-pick"><option value="">Select Item</option></select>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <select id="rate-type"><option value="retail">Retail Rate</option><option value="wholesale">Wholesale</option></select>
                 <input type="number" id="sale-qty" placeholder="Quantity">
-                <input type="number" id="sale-gst" placeholder="GST %" value="0">
             </div>
+            <input type="number" id="sale-gst" placeholder="GST %" value="0">
             <button class="btn btn-primary" onclick="addToCart()">+ Add to List</button>
         </div>
         <div class="card">
             <table id="cart-table">
-                <thead><tr><th>Item</th><th>Qty</th><th>GST</th><th>Total</th></tr></thead>
+                <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>
                 <tbody id="cart-body"></tbody>
             </table>
             <div style="text-align: right; margin-top: 15px;">
-                <p>Taxable: ₹ <span id="tax-amt">0</span> | GST: ₹ <span id="gst-amt">0</span></p>
                 <h2 style="color: var(--accent);">Grand Total: ₹ <span id="cart-total">0</span></h2>
             </div>
             <select id="pay-method" class="no-print">
@@ -94,17 +94,19 @@
     <div id="sec-items" style="display:none">
         <div class="card">
             <h3>Manage Stock</h3>
-            <input type="hidden" id="edit-id" value="">
             <input type="text" id="i-name" placeholder="Item Name">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <input type="number" id="i-buy" placeholder="Buy Rate">
                 <input type="number" id="i-qty" placeholder="Quantity">
             </div>
-            <input type="number" id="i-retail" placeholder="Retail Rate">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <input type="number" id="i-retail" placeholder="Retail Rate">
+                <input type="number" id="i-wholesale" placeholder="Wholesale Rate">
+            </div>
             <button class="btn btn-primary" onclick="saveItem()">Save Item</button>
         </div>
         <table>
-            <thead><tr><th>Item</th><th>Stock</th><th>Rate</th><th>Action</th></tr></thead>
+            <thead><tr><th>Item</th><th>Stock</th><th>Retail</th><th>Wholesale</th><th>Action</th></tr></thead>
             <tbody id="stock-body"></tbody>
         </table>
     </div>
@@ -135,7 +137,6 @@
     let sales = [];
     let cart = [];
 
-    // Sync Data
     onSnapshot(collection(db, "inventory"), (s) => {
         inv = s.docs.map(d => ({ id: d.id, ...d.data() }));
         refreshUI();
@@ -158,32 +159,32 @@
         let buy = parseFloat(document.getElementById('i-buy').value) || 0;
         let qty = parseFloat(document.getElementById('i-qty').value) || 0;
         let retail = parseFloat(document.getElementById('i-retail').value) || 0;
+        let wholesale = parseFloat(document.getElementById('i-wholesale').value) || 0;
         if(!name) return;
-        await addDoc(collection(db, "inventory"), { name, buy, qty, retail });
-        ['i-name', 'i-buy', 'i-qty', 'i-retail'].forEach(id => document.getElementById(id).value = '');
+        await addDoc(collection(db, "inventory"), { name, buy, qty, retail, wholesale });
+        ['i-name', 'i-buy', 'i-qty', 'i-retail', 'i-wholesale'].forEach(id => document.getElementById(id).value = '');
     };
 
     window.addToCart = () => {
         let idx = document.getElementById('item-pick').value;
         let qty = parseFloat(document.getElementById('sale-qty').value);
+        let type = document.getElementById('rate-type').value;
         let gstP = parseFloat(document.getElementById('sale-gst').value) || 0;
         if(idx==="" || !qty) return;
         let it = inv[idx];
-        let base = it.retail * qty;
-        let gstA = (base * gstP) / 100;
-        cart.push({ name: it.name, qty, total: base + gstA, invId: it.id, base, gstA, gstP });
+        let rate = (type === 'retail') ? it.retail : it.wholesale;
+        let total = (rate * qty) + ((rate * qty * gstP) / 100);
+        cart.push({ name: it.name, qty, rate, total, invId: it.id });
         updateCartUI();
     };
 
     function updateCartUI() {
         let b = document.getElementById('cart-body'); b.innerHTML = '';
-        let tax = 0, gst = 0, grand = 0;
+        let grand = 0;
         cart.forEach(c => {
-            tax += c.base; gst += c.gstA; grand += c.total;
-            b.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.gstP}%</td><td>${c.total.toFixed(2)}</td></tr>`;
+            grand += c.total;
+            b.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.rate}</td><td>${c.total.toFixed(2)}</td></tr>`;
         });
-        document.getElementById('tax-amt').innerText = tax.toFixed(2);
-        document.getElementById('gst-amt').innerText = gst.toFixed(2);
         document.getElementById('cart-total').innerText = grand.toFixed(2);
     }
 
@@ -192,13 +193,15 @@
         if(total <= 0) return;
         document.getElementById('loading').style.display = 'flex';
         
+        let now = new Date();
         let saleData = {
             cust: document.getElementById('cust-name').value || "Cash Sale",
             total: total,
             method: document.getElementById('pay-method').value,
             items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.total })),
-            time: new Date().toLocaleDateString(),
-            timestamp: new Date()
+            date: now.toLocaleDateString(),
+            time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp: now
         };
 
         await addDoc(collection(db, "sales"), saleData);
@@ -219,21 +222,21 @@
         inv.forEach((it, i) => {
             sVal += (it.buy * it.qty);
             sel.innerHTML += `<option value="${i}">${it.name}</option>`;
-            sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td><button class="btn-del" onclick="deleteItem('${it.id}')">Del</button></td></tr>`;
+            sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td>${it.wholesale || 0}</td><td><button onclick="deleteItem('${it.id}')">Del</button></td></tr>`;
         });
 
         let rList = document.getElementById('recent-list'); rList.innerHTML = '';
         let credMap = {};
         sales.forEach(s => {
-            if(s.time === today) todaySale += s.total;
+            if(s.date === today) todaySale += s.total;
             if(s.method === 'credit') { cred += s.total; credMap[s.cust] = (credMap[s.cust] || 0) + s.total; }
             else cash += s.total;
 
-            let itemLines = (s.items || []).map(i => `<li>${i.name} (Qty: ${i.qty}) - ₹${i.price.toFixed(0)}</li>`).join('');
+            let itemLines = (s.items || []).map(i => `<li>${i.name} (${i.qty}) - ₹${i.price.toFixed(0)}</li>`).join('');
             rList.innerHTML += `
                 <div class="card" style="padding:12px; margin-bottom:8px; border-left: 5px solid var(--accent);">
                     <div style="display:flex; justify-content:space-between;">
-                        <span><b>${s.cust}</b> <small>(${s.method})</small><br><small>${s.time}</small></span>
+                        <span><b>${s.cust}</b> <small>(${s.method})</small><br><small>${s.date} ${s.time || ''}</small></span>
                         <b style="color:var(--accent)">₹${s.total.toFixed(0)}</b>
                     </div>
                     <ul class="bill-item-list">${itemLines}</ul>
