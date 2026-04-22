@@ -3,396 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iqra Marketing - Professional Business Suite</title>
+    <title>Iqra Marketing - Smart Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #1e293b; --accent: #3b82f6; --success: #22c55e; --danger: #ef4444; --warning: #f59e0b; --bg: #f8fafc; }
-        body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); margin: 0; color: #334155; }
+        :root { --primary: #0f172a; --accent: #2563eb; --bg: #f1f5f9; --white: #ffffff; }
+        body { font-family: 'Manjari', sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
         
-        /* Layout */
-        .app-container { max-width: 98%; margin: 15px auto; background: white; min-height: 95vh; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        .header { background: var(--primary); color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; }
+        .logo-container { background: white; width: 80px; height: 80px; border-radius: 12px; margin: 0 auto 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .logo-container img { width: 100%; height: 100%; object-fit: contain; }
+
+        .nav-bar { display: grid; grid-template-columns: repeat(4, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .nav-btn { border: none; background: none; padding: 15px 5px; font-weight: bold; color: #64748b; cursor: pointer; }
+        .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); background: #eff6ff; }
+
+        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         
-        .top-bar { background: var(--primary); color: white; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; border-radius: 16px 16px 0 0; }
-        .nav-bar { display: flex; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
-        .nav-btn { flex: 1; padding: 18px; border: none; background: none; cursor: pointer; font-weight: 600; color: #64748b; transition: 0.2s; }
-        .nav-btn.active { color: var(--accent); background: white; border-bottom: 4px solid var(--accent); }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .stat-box { padding: 15px; border-radius: 12px; color: white; text-align: center; }
+        .blue { background: #3b82f6; } .green { background: #10b981; }
+        .red { background: #ef4444; } .purple { background: #8b5cf6; }
 
-        .main-content { padding: 30px; flex-grow: 1; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-backup { background: #64748b; color: white; font-size: 12px; padding: 8px; width: auto; margin-top: 20px; }
 
-        /* Dashboard */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
-        .stat-card { padding: 25px; border-radius: 15px; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .card-blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
-        .card-green { background: linear-gradient(135deg, #10b981, #059669); }
-        .card-red { background: linear-gradient(135deg, #ef4444, #b91c1c); }
-        .card-orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
-
-        /* Tables & UI Elements */
-        .glass-panel { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 10px; overflow: hidden; }
-        th { background: #f1f5f9; padding: 15px; text-align: left; font-weight: 600; color: #475569; }
-        td { padding: 15px; border-bottom: 1px solid #f1f5f9; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #f1f5f9; }
         
-        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; outline: none; }
-        input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-
-        .btn { padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; }
-        .btn-primary { background: var(--accent); color: white; width: 100%; }
-        .btn-success { background: var(--success); color: white; }
-        .btn-action { padding: 6px 12px; font-size: 12px; margin-right: 5px; }
-
-        .hidden { display: none; }
-
-        /* Invoice Print */
-        #printable-invoice { display: none; padding: 40px; }
-        @media print {
-            .no-print { display: none !important; }
-            #printable-invoice { display: block !important; }
-            .app-container { box-shadow: none; margin: 0; max-width: 100%; }
-        }
+        @media print { .no-print { display: none !important; } }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <div class="top-bar no-print">
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <div style="background: white; width: 45px; height: 45px; border-radius: 12px; display: grid; place-items: center; color: var(--primary); font-weight: bold; font-size: 24px;">I</div>
-            <div>
-                <h2 style="margin:0;">IQRA MARKETING</h2>
-                <span id="live-clock" style="font-size: 12px; opacity: 0.8;"></span>
-            </div>
-        </div>
-        <div style="text-align: right;">
-            <span style="background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 20px; font-size: 13px;">Offline Mode Active ✅</span>
-        </div>
+<div class="header no-print">
+    <div class="logo-container">
+        <img src="logo.png" alt="Iqra Logo" onerror="this.style.display='none'; this.parentElement.innerHTML='IQRA'">
     </div>
-
-    <div class="nav-bar no-print">
-        <button class="nav-btn active" onclick="showTab('dash')">🏠 Dashboard</button>
-        <button class="nav-btn" onclick="showTab('bill')">🧾 New Sale</button>
-        <button class="nav-btn" onclick="showTab('stock')">📦 Inventory</button>
-        <button class="nav-btn" onclick="showTab('reports')">📊 Reports</button>
-        <button class="nav-btn" onclick="showTab('credit')">👥 Credits</button>
-    </div>
-
-    <div class="main-content">
-        <div id="tab-dash" class="tab-content">
-            <div class="stats-grid">
-                <div class="stat-card card-blue"><h4>Total Stock Value</h4><h2 id="st-val">₹ 0</h2></div>
-                <div class="stat-card card-green"><h4>Cash in Hand</h4><h2 id="st-cash">₹ 0</h2></div>
-                <div class="stat-card card-orange"><h4>G-Pay Balance</h4><h2 id="st-gpay">₹ 0</h2></div>
-                <div class="stat-card card-red"><h4>Total Credits</h4><h2 id="st-cred">₹ 0</h2></div>
-            </div>
-
-            <h3 style="margin-top: 40px;">Recent Sales History</h3>
-            <table>
-                <thead><tr><th>Time</th><th>Customer</th><th>Amount</th><th>Mode</th><th>Action</th></tr></thead>
-                <tbody id="sales-history"></tbody>
-            </table>
-        </div>
-
-        <div id="tab-bill" class="tab-content hidden">
-            <div class="glass-panel no-print">
-                <h3>Create New Invoice</h3>
-                <div class="input-group">
-                    <input type="text" id="bill-cust" placeholder="Customer Name">
-                    <select id="bill-mode">
-                        <option value="cash">Cash Payment</option>
-                        <option value="gpay">Google Pay</option>
-                        <option value="credit">Add to Credit (കടം)</option>
-                    </select>
-                </div>
-                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px;">
-                    <select id="bill-item-sel"><option value="">Select Item</option></select>
-                    <input type="number" id="bill-qty" placeholder="Qty">
-                    <select id="bill-rate-type"><option value="retail">Retail Price</option><option value="whole">Wholesale Price</option></select>
-                </div>
-                <button class="btn btn-primary" style="margin-top: 15px;" onclick="addToBill()">+ Add Item to List</button>
-            </div>
-
-            <table id="current-bill-table">
-                <thead><tr><th>Item Name</th><th>Qty</th><th>Price</th><th>Total</th><th></th></tr></thead>
-                <tbody id="current-bill-body"></tbody>
-            </table>
-            
-            <div style="text-align: right; margin-top: 25px;">
-                <h1 style="margin:0;">Total: ₹ <span id="bill-grand-total">0</span></h1>
-                <button class="btn btn-success" style="width: 250px; margin-top: 15px;" onclick="finalizeSale()">Finalize & Print Bill</button>
-            </div>
-        </div>
-
-        <div id="tab-stock" class="tab-content hidden">
-            <div class="glass-panel">
-                <h3>Add / Edit Purchase</h3>
-                <input type="hidden" id="edit-id">
-                <input type="text" id="p-name" placeholder="Item Name" style="margin-bottom: 15px;">
-                <div class="input-group">
-                    <input type="number" id="p-buy" placeholder="Purchase Rate">
-                    <input type="number" id="p-whole" placeholder="Wholesale Rate">
-                </div>
-                <div class="input-group">
-                    <input type="number" id="p-retail" placeholder="Retail Rate">
-                    <input type="number" id="p-qty" placeholder="Total Stock Quantity">
-                </div>
-                <button class="btn btn-primary" id="save-btn" onclick="handleStockSave()">Save Item to Inventory</button>
-            </div>
-            <table>
-                <thead><tr><th>Item</th><th>Stock</th><th>Buy Rate</th><th>Actions</th></tr></thead>
-                <tbody id="stock-list-body"></tbody>
-            </table>
-        </div>
-
-        <div id="tab-reports" class="tab-content hidden">
-            <div class="glass-panel">
-                <h3>Profit & Sales Analysis</h3>
-                <div class="stats-grid">
-                    <div class="stat-card card-green"><h4>Estimated Profit</h4><h2 id="rep-profit">₹ 0</h2></div>
-                    <div class="stat-card card-blue"><h4>Total Items Sold</h4><h2 id="rep-sold">0</h2></div>
-                </div>
-            </div>
-            <button class="btn btn-primary" style="width: auto; background: #64748b;" onclick="exportFullData()">Download Monthly Backup</button>
-        </div>
-
-        <div id="tab-credit" class="tab-content hidden">
-            <h3>Customer Balances</h3>
-            <table>
-                <thead><tr><th>Customer Name</th><th>Balance Amount</th><th>Action</th></tr></thead>
-                <tbody id="credit-list-body"></tbody>
-            </table>
-        </div>
-    </div>
+    <h2 style="margin: 0;">IQRA MARKETING</h2>
 </div>
 
-<div id="printable-invoice">
-    <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px;">
-        <h2>IQRA MARKETING</h2>
-        <p>Your Professional Business Partner</p>
-        <p id="print-date"></p>
+<nav class="nav-bar no-print">
+    <button class="nav-btn active" onclick="tab('home')">Home</button>
+    <button class="nav-btn" onclick="tab('bill')">Bill</button>
+    <button class="nav-btn" onclick="tab('items')">Items</button>
+    <button class="nav-btn" onclick="tab('report')">Credit</button>
+</nav>
+
+<div class="container">
+    <div id="sec-home">
+        <div class="stats">
+            <div class="stat-box blue"><h4>Stock Val</h4><h2 id="ds-stock">₹ 0</h2></div>
+            <div class="stat-box green"><h4>Today</h4><h2 id="ds-sale">₹ 0</h2></div>
+            <div class="stat-box red"><h4>Credit</h4><h2 id="ds-cred">₹ 0</h2></div>
+            <div class="stat-box purple"><h4>Cash</h4><h2 id="ds-cash">₹ 0</h2></div>
+        </div>
+        <h3 style="margin-top: 25px;">Recent Sales</h3>
+        <div id="recent-list"></div>
+        
+        <center>
+            <button class="btn btn-backup no-print" onclick="downloadBackup()">📥 Download Data Backup</button>
+        </center>
     </div>
-    <div style="margin: 20px 0;">
-        <p><b>Customer:</b> <span id="print-cust"></span></p>
-        <p><b>Payment:</b> <span id="print-mode"></span></p>
+
+    <div id="sec-bill" style="display:none">
+        <div class="card no-print">
+            <h3>New Bill</h3>
+            <input type="text" id="cust-name" placeholder="Customer Name">
+            <select id="item-pick"><option value="">Select Item</option></select>
+            <input type="number" id="sale-qty" placeholder="Quantity">
+            <select id="price-type"><option value="retail">Retail</option><option value="whole">Wholesale</option></select>
+            <button class="btn btn-primary" onclick="addToCart()">+ Add Item</button>
+        </div>
+        <div class="card">
+            <table id="cart-table">
+                <thead><tr><th>Item</th><th>Qty</th><th>Total</th></tr></thead>
+                <tbody id="cart-body"></tbody>
+            </table>
+            <h2 style="text-align: right;">Total: ₹ <span id="cart-total">0</span></h2>
+            <select id="pay-method" class="no-print"><option value="cash">Cash</option><option value="gpay">G-Pay</option><option value="credit">Credit (കടം)</option></select>
+            <button class="btn btn-primary no-print" style="background:#059669" onclick="finishBill()">Print & Save</button>
+        </div>
     </div>
-    <table style="width: 100%; border: 1px solid #ddd;">
-        <thead><tr style="background: #eee;"><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>
-        <tbody id="print-items"></tbody>
-    </table>
-    <h2 style="text-align: right; margin-top: 20px;">Grand Total: ₹ <span id="print-total"></span></h2>
-    <p style="text-align: center; margin-top: 50px;">Thank You for your Business!</p>
+
+    <div id="sec-items" style="display:none">
+        <div class="card">
+            <h3>Add Stock</h3>
+            <input type="text" id="i-name" placeholder="Item Name">
+            <input type="number" id="i-buy" placeholder="Buy Rate">
+            <input type="number" id="i-qty" placeholder="Qty">
+            <input type="number" id="i-retail" placeholder="Retail Price">
+            <button class="btn btn-primary" onclick="saveItem()">Save Item</button>
+        </div>
+        <table id="stock-table">
+            <thead><tr><th>Item</th><th>Stock</th><th>Rate</th></tr></thead>
+            <tbody id="stock-body"></tbody>
+        </table>
+    </div>
+
+    <div id="sec-report" style="display:none">
+        <h3>Customer Credits</h3>
+        <div id="credit-list"></div>
+    </div>
 </div>
 
 <script>
-    // Database structure
-    let db = {
-        inv: JSON.parse(localStorage.getItem('iq_pro_inv')) || [],
-        sales: JSON.parse(localStorage.getItem('iq_pro_sales')) || [],
-        ledger: JSON.parse(localStorage.getItem('iq_pro_ledger')) || {}
-    };
-
+    let inv = JSON.parse(localStorage.getItem('iq_inv')) || [];
+    let sales = JSON.parse(localStorage.getItem('iq_sales')) || [];
     let cart = [];
 
-    function showTab(tabId) {
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    function tab(id) {
+        document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('tab-'+tabId).classList.remove('hidden');
-        event.target.classList.add('active');
-        refreshAll();
+        document.getElementById('sec-'+id).style.display = 'block';
+        if(event) event.target.classList.add('active');
+        refresh();
     }
 
-    function handleStockSave() {
-        const id = document.getElementById('edit-id').value;
-        const item = {
-            name: document.getElementById('p-name').value,
-            buy: parseFloat(document.getElementById('p-buy').value) || 0,
-            whole: parseFloat(document.getElementById('p-whole').value) || 0,
-            retail: parseFloat(document.getElementById('p-retail').value) || 0,
-            qty: parseFloat(document.getElementById('p-qty').value) || 0
+    function saveItem() {
+        let item = {
+            name: document.getElementById('i-name').value,
+            buy: parseFloat(document.getElementById('i-buy').value) || 0,
+            qty: parseFloat(document.getElementById('i-qty').value) || 0,
+            retail: parseFloat(document.getElementById('i-retail').value) || 0
         };
-
-        if(!item.name) return alert("Please enter item name");
-
-        if(id !== "") { db.inv[id] = item; }
-        else { db.inv.push(item); }
-
-        saveToDisk();
-        clearStockForm();
-        refreshAll();
+        if(!item.name) return;
+        inv.push(item);
+        localStorage.setItem('iq_inv', JSON.stringify(inv));
+        tab('items');
     }
 
-    function addToBill() {
-        const idx = document.getElementById('bill-item-sel').value;
-        const qty = parseFloat(document.getElementById('bill-qty').value);
+    function addToCart() {
+        let idx = document.getElementById('item-pick').value;
+        let qty = parseFloat(document.getElementById('sale-qty').value);
         if(idx === "" || !qty) return;
-
-        const item = db.inv[idx];
-        const rate = document.getElementById('bill-rate-type').value === 'whole' ? item.whole : item.retail;
-        
-        cart.push({ name: item.name, qty: qty, rate: rate, total: qty * rate, invIdx: idx, buyRate: item.buy });
-        renderCart();
+        let it = inv[idx];
+        cart.push({name: it.name, qty: qty, total: qty * it.retail, idx: idx});
+        updateUI();
     }
 
-    function renderCart() {
-        const body = document.getElementById('current-bill-body');
-        body.innerHTML = '';
-        let total = 0;
-        cart.forEach((item, i) => {
-            total += item.total;
-            body.innerHTML += `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.rate}</td><td>${item.total}</td>
-            <td><button class="btn btn-red btn-action" onclick="cart.splice(${i},1);renderCart()">Remove</button></td></tr>`;
-        });
-        document.getElementById('bill-grand-total').innerText = total.toFixed(2);
+    function updateUI() {
+        let b = document.getElementById('cart-body'); b.innerHTML = '';
+        let t = 0;
+        cart.forEach(c => { t += c.total; b.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.total}</td></tr>`; });
+        document.getElementById('cart-total').innerText = t;
     }
 
-    function finalizeSale() {
-        const total = parseFloat(document.getElementById('bill-grand-total').innerText);
-        const mode = document.getElementById('bill-mode').value;
-        const cust = document.getElementById('bill-cust').value || "Counter Sale";
-
-        if(cart.length === 0) return alert("Cart is empty!");
-        if(mode === 'credit' && cust === "Counter Sale") return alert("Customer name required for credit!");
-
-        const sale = { time: Date.now(), cust, total, mode, items: [...cart] };
-        db.sales.push(sale);
-
-        if(mode === 'credit') db.ledger[cust] = (db.ledger[cust] || 0) + total;
-        
-        cart.forEach(c => { db.inv[c.invIdx].qty -= c.qty; });
-
-        saveToDisk();
-        preparePrint(sale);
+    function finishBill() {
+        let t = parseFloat(document.getElementById('cart-total').innerText);
+        if(t <= 0) return;
+        let s = { cust: document.getElementById('cust-name').value || "Cash", total: t, method: document.getElementById('pay-method').value, time: new Date().toLocaleDateString() };
+        sales.push(s);
+        cart.forEach(c => { inv[c.idx].qty -= c.qty; });
+        localStorage.setItem('iq_inv', JSON.stringify(inv));
+        localStorage.setItem('iq_sales', JSON.stringify(sales));
         window.print();
         location.reload();
     }
 
-    function preparePrint(sale) {
-        document.getElementById('print-date').innerText = new Date().toLocaleString();
-        document.getElementById('print-cust').innerText = sale.cust;
-        document.getElementById('print-mode').innerText = sale.mode.toUpperCase();
-        document.getElementById('print-total').innerText = sale.total;
-        const body = document.getElementById('print-items');
-        body.innerHTML = '';
-        sale.items.forEach(i => {
-            body.innerHTML += `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.rate}</td><td>${i.total}</td></tr>`;
-        });
-    }
-
-    function deleteSale(idx) {
-        if(confirm("Delete this sale? Stock will be restored.")) {
-            const sale = db.sales[idx];
-            sale.items.forEach(c => {
-                const item = db.inv.find(i => i.name === c.name);
-                if(item) item.qty += c.qty;
-            });
-            if(sale.mode === 'credit') db.ledger[sale.cust] -= sale.total;
-            db.sales.splice(idx, 1);
-            saveToDisk();
-            refreshAll();
-        }
-    }
-
-    function refreshAll() {
-        // Update Stats
-        let stockVal = 0, cash = 0, gpay = 0, cred = 0, profit = 0, soldCount = 0;
-        
-        db.inv.forEach(i => stockVal += (i.buy * i.qty));
-        db.sales.forEach(s => {
-            if(s.mode === 'cash') cash += s.total;
-            if(s.mode === 'gpay') gpay += s.total;
-            s.items.forEach(item => {
-                profit += (item.rate - item.buyRate) * item.qty;
-                soldCount += item.qty;
-            });
-        });
-        for(let c in db.ledger) { if(db.ledger[c] > 0) cred += db.ledger[c]; }
-
-        document.getElementById('st-val').innerText = '₹ ' + stockVal.toFixed(2);
-        document.getElementById('st-cash').innerText = '₹ ' + cash.toFixed(2);
-        document.getElementById('st-gpay').innerText = '₹ ' + gpay.toFixed(2);
-        document.getElementById('st-cred').innerText = '₹ ' + cred.toFixed(2);
-        document.getElementById('rep-profit').innerText = '₹ ' + profit.toFixed(2);
-        document.getElementById('rep-sold').innerText = soldCount;
-
-        // Render Inventory Select
-        const sel = document.getElementById('bill-item-sel');
-        sel.innerHTML = '<option value="">Select Item</option>';
-        const listBody = document.getElementById('stock-list-body');
-        listBody.innerHTML = '';
-        db.inv.forEach((item, i) => {
-            sel.innerHTML += `<option value="${i}">${item.name} (${item.qty})</option>`;
-            listBody.innerHTML += `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.buy}</td>
-            <td><button class="btn-action btn-edit" style="background:var(--warning); color:white; border:none; padding:5px 10px; border-radius:4px;" onclick="editInv(${i})">Edit</button>
-            <button class="btn-action" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:4px;" onclick="deleteInv(${i})">Delete</button></td></tr>`;
-        });
-
-        // Sales History
-        const sHist = document.getElementById('sales-history');
-        sHist.innerHTML = '';
-        db.sales.slice(-10).reverse().forEach((s, i) => {
-            sHist.innerHTML += `<tr><td>${new Date(s.time).toLocaleTimeString()}</td><td>${s.cust}</td><td>${s.total}</td><td>${s.mode}</td>
-            <td><button class="btn-action" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:4px;" onclick="deleteSale(${db.sales.length-1-i})">Delete</button></td></tr>`;
-        });
-
-        // Credit List
-        const cList = document.getElementById('credit-list-body');
-        cList.innerHTML = '';
-        for(let c in db.ledger) {
-            if(db.ledger[c] > 0) {
-                cList.innerHTML += `<tr><td>${c}</td><td style="color:red; font-weight:bold">₹ ${db.ledger[c]}</td>
-                <td><button class="btn btn-success btn-action" onclick="payCred('${c}')">Mark Paid</button></td></tr>`;
-            }
-        }
-    }
-
-    function editInv(i) {
-        const it = db.inv[i];
-        document.getElementById('p-name').value = it.name;
-        document.getElementById('p-buy').value = it.buy;
-        document.getElementById('p-whole').value = it.whole;
-        document.getElementById('p-retail').value = it.retail;
-        document.getElementById('p-qty').value = it.qty;
-        document.getElementById('edit-id').value = i;
-        document.getElementById('save-btn').innerText = "Update Inventory Item";
-        window.scrollTo(0,0);
-    }
-
-    function deleteInv(i) {
-        if(confirm("Remove this item?")) { db.inv.splice(i,1); saveToDisk(); refreshAll(); }
-    }
-
-    function payCred(n) {
-        let amt = prompt("Amount paid by " + n);
-        if(amt) { db.ledger[n] -= parseFloat(amt); saveToDisk(); refreshAll(); }
-    }
-
-    function saveToDisk() {
-        localStorage.setItem('iq_pro_inv', JSON.stringify(db.inv));
-        localStorage.setItem('iq_pro_sales', JSON.stringify(db.sales));
-        localStorage.setItem('iq_pro_ledger', JSON.stringify(db.ledger));
-    }
-
-    function clearStockForm() {
-        document.getElementById('p-name').value = '';
-        document.getElementById('p-buy').value = '';
-        document.getElementById('p-whole').value = '';
-        document.getElementById('p-retail').value = '';
-        document.getElementById('p-qty').value = '';
-        document.getElementById('edit-id').value = '';
-        document.getElementById('save-btn').innerText = "Save Item to Inventory";
-    }
-
-    function exportFullData() {
-        const data = JSON.stringify(db);
-        const blob = new Blob([data], {type: "application/json"});
-        const a = document.createElement('a');
+    function downloadBackup() {
+        let data = { inventory: inv, sales: sales };
+        let blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+        let a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = `Iqra_Backup_${new Date().toLocaleDateString()}.json`;
         a.click();
     }
 
-    setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); }, 1000);
-    refreshAll();
+    function refresh() {
+        let sVal = 0; inv.forEach(i => sVal += (i.buy * i.qty));
+        document.getElementById('ds-stock').innerText = "₹ " + sVal;
+        
+        let sel = document.getElementById('item-pick'); sel.innerHTML = '<option value="">Select Item</option>';
+        let sBody = document.getElementById('stock-body'); sBody.innerHTML = '';
+        inv.forEach((it, i) => {
+            sel.innerHTML += `<option value="${i}">${it.name}</option>`;
+            sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td></tr>`;
+        });
+    }
+    refresh();
 </script>
-
 </body>
 </html>
