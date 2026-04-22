@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iqra Marketing - Secure Pro</title>
+    <title>Iqra Marketing - Cloud Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #1e293b; --accent: #2563eb; --bg: #f8fafc; --text: #334155; }
@@ -22,7 +22,7 @@
         .stat-box { padding: 15px; border-radius: 12px; color: white; text-align: center; }
         .blue { background: #3b82f6; } .green { background: #10b981; } .red { background: #ef4444; } .purple { background: #8b5cf6; }
         input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-family: 'Manjari'; }
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
         .btn-primary { background: var(--accent); color: white; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
         th { background: #f1f5f9; padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0; }
@@ -30,10 +30,13 @@
         .action-btns { display: flex; gap: 5px; }
         .btn-edit { background: #fef3c7; color: #d97706; padding: 5px 8px; border-radius: 4px; border: none; cursor: pointer; font-size: 11px; }
         .btn-del { background: #fee2e2; color: #dc2626; padding: 5px 8px; border-radius: 4px; border: none; cursor: pointer; font-size: 11px; }
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; }
         @media print { .no-print, .nav-bar, .action-btns { display: none !important; } body { background: white; } .header { background: white !important; color: black !important; border-radius: 0; border-bottom: 2px solid #333; } }
     </style>
 </head>
 <body>
+
+<div id="loading"><b>Loading...</b></div>
 
 <div class="header">
     <div class="logo-container"><img src="logo.png" alt="Iqra Logo" onerror="this.parentElement.innerHTML='IQRA'"></div>
@@ -76,10 +79,10 @@
         </div>
         <div class="card">
             <table id="cart-table">
-                <thead><tr><th>Item</th><th>Qty</th><th>GST %</th><th>Total</th></tr></thead>
+                <thead><tr><th>Item</th><th>Qty</th><th>GST</th><th>Total</th></tr></thead>
                 <tbody id="cart-body"></tbody>
             </table>
-            <div style="text-align: right; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+            <div style="text-align: right; margin-top: 15px;">
                 <p>Taxable: ₹ <span id="tax-amt">0</span> | GST: ₹ <span id="gst-amt">0</span></p>
                 <h2 style="color: var(--accent);">Grand Total: ₹ <span id="cart-total">0</span></h2>
             </div>
@@ -93,7 +96,7 @@
     <div id="sec-items" style="display:none">
         <div class="card">
             <h3 id="stock-title">Add/Edit Stock</h3>
-            <input type="hidden" id="edit-index" value="-1">
+            <input type="hidden" id="edit-id" value="">
             <input type="text" id="i-name" placeholder="Item Name">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <input type="number" id="i-buy" placeholder="Buy Rate">
@@ -115,85 +118,90 @@
     </div>
 </div>
 
-<script>
-    let inv = JSON.parse(localStorage.getItem('iq_final_inv')) || [];
-    let sales = JSON.parse(localStorage.getItem('iq_final_sales')) || [];
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDmviHo3-oZChgxScf4RTfQ9d8nMNxSgGI",
+        authDomain: "iqra-marketing.firebaseapp.com",
+        projectId: "iqra-marketing",
+        storageBucket: "iqra-marketing.firebasestorage.app",
+        messagingSenderId: "84257271416",
+        appId: "1:84257271416:web:c064f1d8c79adf25b1c78d"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const ADMIN_PASS = "305300";
+
+    let inv = [];
+    let sales = [];
     let cart = [];
-    
-    // നിങ്ങൾ ആവശ്യപ്പെട്ട പാസ്‌വേഡ്
-    const ADMIN_PASS = "305300"; 
 
-    function checkPass() {
-        let p = prompt("സുരക്ഷാ പാസ്‌വേഡ് നൽകുക:");
-        return p === ADMIN_PASS;
-    }
+    // Real-time listener for Stock
+    onSnapshot(collection(db, "inventory"), (snapshot) => {
+        inv = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        refreshUI();
+    });
 
-    function tab(id) {
+    // Real-time listener for Sales
+    onSnapshot(query(collection(db, "sales"), orderBy("timestamp", "desc")), (snapshot) => {
+        sales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        refreshUI();
+    });
+
+    window.tab = function(id) {
         document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('sec-'+id).style.display = 'block';
         document.getElementById('btn-'+id).classList.add('active');
-        refresh();
-    }
+    };
 
-    function editItem(idx) {
-        if(checkPass()) {
-            let it = inv[idx];
-            document.getElementById('i-name').value = it.name;
-            document.getElementById('i-buy').value = it.buy;
-            document.getElementById('i-qty').value = it.qty;
-            document.getElementById('i-retail').value = it.retail;
-            document.getElementById('edit-index').value = idx;
-            document.getElementById('stock-title').innerText = "Edit Stock Item";
-            document.getElementById('btn-save-stock').innerText = "Update Item";
-            document.getElementById('btn-cancel-edit').style.display = 'block';
-            window.scrollTo(0, 0);
-        } else {
-            alert("പാസ്‌വേഡ് തെറ്റാണ്!");
-        }
-    }
-
-    function deleteItem(idx) {
-        if(checkPass()) {
-            if(confirm("ഈ ഐറ്റം ഡിലീറ്റ് ചെയ്യണമെന്നു ഉറപ്പാണോ?")) {
-                inv.splice(idx, 1);
-                saveToLocal();
-                refresh();
-            }
-        } else {
-            alert("പാസ്‌വേഡ് തെറ്റാണ്!");
-        }
-    }
-
-    function saveItem() {
+    window.saveItem = async function() {
         let name = document.getElementById('i-name').value;
         let buy = parseFloat(document.getElementById('i-buy').value) || 0;
         let qty = parseFloat(document.getElementById('i-qty').value) || 0;
         let retail = parseFloat(document.getElementById('i-retail').value) || 0;
-        let index = parseInt(document.getElementById('edit-index').value);
+        let editId = document.getElementById('edit-id').value;
 
         if(!name) return;
-        if(index === -1) { inv.push({ name, buy, qty, retail }); } 
-        else { inv[index] = { name, buy, qty, retail }; cancelEdit(); }
-        
-        saveToLocal();
-        refresh();
+        document.getElementById('loading').style.display = 'flex';
+
+        if(!editId) {
+            await addDoc(collection(db, "inventory"), { name, buy, qty, retail });
+        } else {
+            await updateDoc(doc(db, "inventory", editId), { name, buy, qty, retail });
+            cancelEdit();
+        }
         clearInputs();
-    }
+        document.getElementById('loading').style.display = 'none';
+    };
 
-    function cancelEdit() {
-        document.getElementById('edit-index').value = "-1";
-        document.getElementById('stock-title').innerText = "Add Stock";
-        document.getElementById('btn-save-stock').innerText = "Save Item";
-        document.getElementById('btn-cancel-edit').style.display = 'none';
-        clearInputs();
-    }
+    window.editItem = function(id) {
+        if(prompt("സുരക്ഷാ പാസ്‌വേഡ് നൽകുക:") === ADMIN_PASS) {
+            let it = inv.find(i => i.id === id);
+            document.getElementById('i-name').value = it.name;
+            document.getElementById('i-buy').value = it.buy;
+            document.getElementById('i-qty').value = it.qty;
+            document.getElementById('i-retail').value = it.retail;
+            document.getElementById('edit-id').value = id;
+            document.getElementById('stock-title').innerText = "Edit Stock Item";
+            document.getElementById('btn-save-stock').innerText = "Update Item";
+            document.getElementById('btn-cancel-edit').style.display = 'block';
+            window.tab('items');
+        } else { alert("തെറ്റായ പാസ്‌വേഡ്!"); }
+    };
 
-    function clearInputs() {
-        ['i-name', 'i-buy', 'i-qty', 'i-retail'].forEach(id => document.getElementById(id).value = '');
-    }
+    window.deleteItem = async function(id) {
+        if(prompt("സുരക്ഷാ പാസ്‌വേഡ് നൽകുക:") === ADMIN_PASS) {
+            if(confirm("ഡിലീറ്റ് ചെയ്യണമെന്നു ഉറപ്പാണോ?")) {
+                await deleteDoc(doc(db, "inventory", id));
+            }
+        }
+    };
 
-    function addToCart() {
+    window.addToCart = function() {
         let idx = document.getElementById('item-pick').value;
         let qty = parseFloat(document.getElementById('sale-qty').value);
         let gstPer = parseFloat(document.getElementById('sale-gst').value) || 0;
@@ -201,9 +209,9 @@
         let it = inv[idx];
         let base = it.retail * qty;
         let gAmt = (base * gstPer) / 100;
-        cart.push({ name: it.name, qty, total: base + gAmt, invIdx: idx, gstPer, gAmt, base });
+        cart.push({ name: it.name, qty, total: base + gAmt, invId: it.id, gstPer, gAmt, base });
         updateCartUI();
-    }
+    };
 
     function updateCartUI() {
         let b = document.getElementById('cart-body'); b.innerHTML = '';
@@ -217,42 +225,70 @@
         document.getElementById('cart-total').innerText = grand.toFixed(2);
     }
 
-    function finishBill() {
+    window.finishBill = async function() {
         let t = parseFloat(document.getElementById('cart-total').innerText);
         if(t <= 0) return;
-        sales.push({ id: Date.now(), cust: document.getElementById('cust-name').value || "Cash Sale", total: t, method: document.getElementById('pay-method').value, time: new Date().toLocaleDateString() });
-        cart.forEach(c => { inv[c.invIdx].qty -= c.qty; });
-        saveToLocal();
+        document.getElementById('loading').style.display = 'flex';
+        
+        let saleData = {
+            cust: document.getElementById('cust-name').value || "Cash Sale",
+            total: t,
+            method: document.getElementById('pay-method').value,
+            time: new Date().toLocaleDateString(),
+            timestamp: new Date()
+        };
+
+        await addDoc(collection(db, "sales"), saleData);
+
+        for(let c of cart) {
+            let it = inv.find(i => i.id === c.invId);
+            await updateDoc(doc(db, "inventory", c.invId), { qty: it.qty - c.qty });
+        }
+
         window.print();
         location.reload();
-    }
+    };
 
-    function saveToLocal() {
-        localStorage.setItem('iq_final_inv', JSON.stringify(inv));
-        localStorage.setItem('iq_final_sales', JSON.stringify(sales));
-    }
-
-    function refresh() {
-        let sVal = 0, today = 0, cred = 0, cash = 0;
-        inv.forEach(i => sVal += (i.buy * i.qty));
+    function refreshUI() {
+        let sVal = 0, todaySale = 0, cred = 0, cash = 0;
         let sel = document.getElementById('item-pick'); sel.innerHTML = '<option value="">Select Item</option>';
         let sBody = document.getElementById('stock-body'); sBody.innerHTML = '';
+        
         inv.forEach((it, i) => {
+            sVal += (it.buy * it.qty);
             sel.innerHTML += `<option value="${i}">${it.name}</option>`;
-            sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td class="action-btns"><button class="btn-edit" onclick="editItem(${i})">Edit</button><button class="btn-del" onclick="deleteItem(${i})">Del</button></td></tr>`;
+            sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td class="action-btns"><button class="btn-edit" onclick="editItem('${it.id}')">Edit</button><button class="btn-del" onclick="deleteItem('${it.id}')">Del</button></td></tr>`;
         });
+
         let rList = document.getElementById('recent-list'); rList.innerHTML = '';
+        let credMap = {};
         sales.forEach(s => {
-            today += s.total;
-            if(s.method === 'credit') cred += s.total; else cash += s.total;
-            rList.innerHTML = `<div style="background:#fff; padding:12px; margin-bottom:8px; border-radius:10px; display:flex; justify-content:space-between; box-shadow:0 1px 3px rgba(0,0,0,0.1)"><span><b>${s.cust}</b><br><small>${s.time}</small></span><b>₹${s.total.toFixed(0)}</b></div>` + rList.innerHTML;
+            todaySale += s.total;
+            if(s.method === 'credit') { cred += s.total; credMap[s.cust] = (credMap[s.cust] || 0) + s.total; }
+            else cash += s.total;
+            rList.innerHTML += `<div style="background:#fff; padding:12px; margin-bottom:8px; border-radius:10px; display:flex; justify-content:space-between; box-shadow:0 1px 3px rgba(0,0,0,0.1)"><span><b>${s.cust}</b><br><small>${s.time}</small></span><b>₹${s.total.toFixed(0)}</b></div>`;
         });
+
+        let cList = document.getElementById('credit-list'); cList.innerHTML = '';
+        for(let n in credMap) { cList.innerHTML += `<div style="background:#fff; padding:12px; margin-bottom:5px; border-radius:10px; display:flex; justify-content:space-between;"><b>${n}</b><b style="color:red">₹${credMap[n].toFixed(0)}</b></div>`; }
+
         document.getElementById('ds-stock').innerText = "₹ " + sVal.toFixed(0);
-        document.getElementById('ds-sale').innerText = "₹ " + today.toFixed(0);
+        document.getElementById('ds-sale').innerText = "₹ " + todaySale.toFixed(0);
         document.getElementById('ds-cred').innerText = "₹ " + cred.toFixed(0);
         document.getElementById('ds-cash').innerText = "₹ " + cash.toFixed(0);
     }
-    refresh();
+
+    window.cancelEdit = function() {
+        document.getElementById('edit-id').value = "";
+        document.getElementById('stock-title').innerText = "Add Stock";
+        document.getElementById('btn-save-stock').innerText = "Save Item";
+        document.getElementById('btn-cancel-edit').style.display = 'none';
+        clearInputs();
+    };
+
+    function clearInputs() {
+        ['i-name', 'i-buy', 'i-qty', 'i-retail'].forEach(id => document.getElementById(id).value = '');
+    }
 </script>
 </body>
 </html>
