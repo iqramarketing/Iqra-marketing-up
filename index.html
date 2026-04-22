@@ -3,37 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iqra Marketing - Returns & Sales</title>
+    <title>Iqra Marketing - All-in-One Pro</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        :root { --primary: #0f172a; --accent: #2563eb; --bg: #f1f5f9; --text: #1e293b; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 60px; color: var(--text); }
-        .header { background: var(--primary); color: white; padding: 20px; border-radius: 0 0 20px 20px; text-align: center; }
-        .nav-bar { display: grid; grid-template-columns: repeat(4, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .nav-btn { border: none; background: none; padding: 15px 5px; font-weight: 600; color: #64748b; cursor: pointer; }
-        .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); }
-        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
-        .card { background: white; padding: 18px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 12px; position: relative; }
+        :root { --primary: #121826; --accent: #3b82f6; --bg: #f8fafc; --text: #1e293b; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 70px; color: var(--text); }
         
-        .delete-btn { color: #ef4444; border: none; background: #fee2e2; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; position: absolute; right: 12px; top: 12px; display: flex; align-items: center; justify-content: center; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; }
-        .btn-primary { background: var(--accent); color: white; }
-        .btn-print { background: #059669; color: white; margin-top: 10px; }
-        .btn-return { background: #f59e0b; color: white; margin-top: 10px; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; margin-right: 5px; }
-        .btn-reprint { background: #6366f1; color: white; margin-top: 10px; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
-        
-        .details-pane { display: none; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc; }
-        .sale-card.active .details-pane { display: block; }
+        /* Header & Logo */
+        .header { background: var(--primary); color: white; padding: 20px; display: flex; align-items: center; gap: 15px; border-radius: 0 0 20px 20px; }
+        .logo-box { background: white; color: black; font-weight: 900; width: 55px; height: 55px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+        .header-info h1 { margin: 0; font-size: 1.3rem; letter-spacing: 1px; }
+        .header-info p { margin: 2px 0 0; font-size: 0.8rem; opacity: 0.8; }
 
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
+        /* Navigation */
+        .nav-bar { display: grid; grid-template-columns: repeat(4, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .nav-btn { border: none; background: none; padding: 12px 5px; font-weight: 600; color: #64748b; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.75rem; }
+        .nav-btn i { font-size: 1.2rem; }
+        .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); }
         
+        /* Layout Containers */
+        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .card { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 15px; position: relative; border: 1px solid #e2e8f0; }
+        
+        /* Statistics Boxes */
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-box { padding: 18px; border-radius: 12px; color: white; text-align: center; }
+        .blue { background: #4f46e5; } .green { background: #10b981; }
+        .stat-box h6 { margin: 0; font-size: 0.75rem; text-transform: uppercase; opacity: 0.9; }
+        .stat-box h3 { margin: 8px 0 0; font-size: 1.4rem; }
+
+        /* Forms & Buttons */
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 1rem; box-sizing: border-box; }
+        .btn-main { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 10px; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-dark { background: var(--primary); color: white; }
+        
+        /* Transaction List */
+        .delete-btn { color: #ef4444; border: none; background: #fee2e2; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; position: absolute; right: 12px; top: 15px; }
+        .details-pane { display: none; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc; font-size: 0.9rem; }
+        .sale-card.active .details-pane { display: block; }
+        
+        /* PDF Template */
         #pdf-template { position: absolute; left: -9999px; width: 595px; background: white; padding: 40px; color: black; }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .pdf-table th, .pdf-table td { border: 1px solid #444; padding: 10px; text-align: left; }
+        .pdf-table th, .pdf-table td { border: 1px solid #444; padding: 12px; text-align: left; }
     </style>
 </head>
 <body>
@@ -48,26 +65,35 @@
         <span><b>Date:</b> <span id="pdf-date"></span></span>
     </div>
     <table class="pdf-table">
-        <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+        <thead><tr style="background:#f2f2f2;"><th>Item Name</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
         <tbody id="pdf-items"></tbody>
     </table>
-    <h2 style="text-align: right; margin-top: 20px;">Total: ₹<span id="pdf-total"></span></h2>
+    <h2 style="text-align: right; margin-top: 25px;">Grand Total: ₹<span id="pdf-total"></span></h2>
 </div>
 
 <div class="header">
-    <h1>IQRA MARKETING</h1>
-    <p>Karuvanpadi - 679303 | Ph: 8089305300</p>
+    <div class="logo-box">IQRA</div>
+    <div class="header-info">
+        <h1>IQRA MARKETING</h1>
+        <p>Karuvanpadi - 679303 | Ph: 8089305300</p>
+    </div>
 </div>
 
 <nav class="nav-bar">
-    <button class="nav-btn active" id="btn-home" onclick="tab('home')">Home</button>
-    <button class="nav-btn" id="btn-bill" onclick="tab('bill')">Bill</button>
-    <button class="nav-btn" id="btn-items" onclick="tab('items')">Stock</button>
-    <button class="nav-btn" id="btn-report" onclick="tab('report')">Credit</button>
+    <button class="nav-btn active" id="btn-home" onclick="tab('home')"><i class="fa fa-home"></i> Home</button>
+    <button class="nav-btn" id="btn-bill" onclick="tab('bill')"><i class="fa fa-file-invoice"></i> Bill</button>
+    <button class="nav-btn" id="btn-items" onclick="tab('items')"><i class="fa fa-boxes"></i> Stock</button>
+    <button class="nav-btn" id="btn-report" onclick="tab('report')"><i class="fa fa-user-friends"></i> Credit</button>
 </nav>
 
 <div class="container">
     <div id="sec-home">
+        <div class="stats">
+            <div class="stat-box blue"><h6>Stock Value</h6><h3 id="ds-stock">₹ 0</h3></div>
+            <div class="stat-box green"><h6>Today Sales</h6><h3 id="ds-sale">₹ 0</h3></div>
+        </div>
+        <button class="btn-main btn-dark" onclick="sendDailyReport()"><i class="fab fa-whatsapp"></i> Send Day Report</button>
+        <h4 style="margin: 20px 0 10px;">Recent Transactions</h4>
         <div id="recent-list"></div>
     </div>
 
@@ -75,24 +101,26 @@
         <div class="card">
             <h3>New Invoice</h3>
             <input type="text" id="c-name" placeholder="Customer Name">
-            <input type="text" id="b-search" placeholder="Search Item..." onkeyup="filterItems()">
             <select id="item-pick"><option value="">Select Item</option></select>
             <input type="number" id="s-qty" placeholder="Quantity">
-            <button class="btn btn-primary" onclick="addToCart()">+ Add Item</button>
+            <button class="btn-main btn-primary" onclick="addToCart()">+ Add Item</button>
         </div>
         <div class="card">
-            <table style="width:100%; border-bottom:1px solid #eee;"><tbody id="cart-body"></tbody></table>
-            <h2 style="text-align:right;">Total: ₹<span id="cart-total">0</span></h2>
-            <button class="btn btn-print" onclick="finishBill()">Save & Print</button>
+            <table style="width:100%; border-collapse: collapse;"><tbody id="cart-body"></tbody></table>
+            <h2 style="text-align:right; margin: 15px 0;">Total: ₹<span id="cart-total">0</span></h2>
+            <button class="btn-main" style="background:#059669; color:white;" onclick="finishBill()"><i class="fa fa-print"></i> Save & Print Bill</button>
         </div>
     </div>
 
     <div id="sec-items" style="display:none">
         <div class="card">
+            <h3>Stock Management</h3>
+            <input type="hidden" id="edit-id">
             <input type="text" id="i-name" placeholder="Item Name">
+            <input type="number" id="i-buy" placeholder="Buy Price">
+            <input type="number" id="i-qty" placeholder="Quantity">
             <input type="number" id="i-retail" placeholder="Sale Price">
-            <input type="number" id="i-qty" placeholder="Stock Qty">
-            <button class="btn btn-primary" onclick="saveItem()">Save Stock</button>
+            <button class="btn-main btn-primary" id="save-btn" onclick="saveItem()">Save to Stock</button>
         </div>
         <div id="stock-list"></div>
     </div>
@@ -114,7 +142,9 @@
 
     window.tab = (id) => {
         document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('sec-'+id).style.display = 'block';
+        document.getElementById('btn-'+id).classList.add('active');
     };
 
     window.addToCart = () => {
@@ -127,70 +157,118 @@
 
     function renderCart() {
         let b = document.getElementById('cart-body'); b.innerHTML = ''; let t = 0;
-        cart.forEach(c => { t += c.total; b.innerHTML += `<tr><td>${c.name}</td><td>x${c.qty}</td><td>₹${c.total}</td></tr>`; });
+        cart.forEach((c, i) => { 
+            t += c.total; 
+            b.innerHTML += `<tr style="border-bottom:1px solid #eee;"><td style="padding:10px 0;">${c.name} (x${c.qty})</td><td style="text-align:right;">₹${c.total}</td><td style="text-align:right; width:30px;"><i class="fa fa-times" style="color:red" onclick="cart.splice(${i},1);renderCart();"></i></td></tr>`; 
+        });
         document.getElementById('cart-total').innerText = t;
     }
 
+    window.printFullBill = async (cust, date, total, items) => {
+        document.getElementById('pdf-cust').innerText = cust;
+        document.getElementById('pdf-date').innerText = date;
+        document.getElementById('pdf-total').innerText = total;
+        document.getElementById('pdf-items').innerHTML = items.map(i => `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.rate}</td><td>${i.total}</td></tr>`).join('');
+        const canvas = await html2canvas(document.getElementById('pdf-template'), {scale: 2});
+        const pdf = new jspdf.jsPDF();
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 0);
+        pdf.save(`Iqra_${cust}.pdf`);
+        window.print();
+    };
+
     window.finishBill = async () => {
         let cust = document.getElementById('c-name').value || "Counter Sale", total = document.getElementById('cart-total').innerText;
+        let date = new Date().toLocaleDateString();
         if(total == "0") return;
-
-        await addDoc(collection(db, "sales"), { cust, total: parseFloat(total), items: cart, date: new Date().toLocaleDateString(), timestamp: new Date() });
-        for(let c of cart) { let it = inv.find(i => i.id === c.invId); if(it) await updateDoc(doc(db, "inventory", it.id), { qty: it.qty - c.qty }); }
+        await printFullBill(cust, date, total, cart);
+        await addDoc(collection(db, "sales"), { cust, total: parseFloat(total), items: cart, date, timestamp: new Date() });
+        for(let c of cart) {
+            let it = inv.find(x => x.id === c.invId);
+            if(it) await updateDoc(doc(db, "inventory", it.id), { qty: it.qty - c.qty });
+        }
         location.reload();
     };
 
-    // --- SALES RETURN LOGIC ---
     window.returnSale = async (id) => {
         if(prompt("Admin Password for Return:") !== ADMIN_PW) return;
-        
-        let sale = sales.find(s => s.id === id);
-        if(!sale) return;
-
-        // 1. Return items back to Stock
-        for(let item of sale.items) {
-            let stockItem = inv.find(i => i.id === item.invId || i.name === item.name);
-            if(stockItem) {
-                await updateDoc(doc(db, "inventory", stockItem.id), { 
-                    qty: stockItem.qty + item.qty 
-                });
-            }
-        }
-
-        // 2. Delete the Sale Record
-        await deleteDoc(doc(db, "sales", id));
-        alert("Return Successful. Stock Updated.");
-    };
-
-    window.reprintSale = (id) => {
         let s = sales.find(x => x.id === id);
-        // Add PDF logic here (similar to previous)
-        alert("Generating PDF for " + s.cust);
+        for(let item of s.items) {
+            let it = inv.find(x => x.id === item.invId);
+            if(it) await updateDoc(doc(db, "inventory", it.id), { qty: it.qty + item.qty });
+        }
+        await deleteDoc(doc(db, "sales", id));
     };
 
     function refreshUI() {
-        let rList = document.getElementById('recent-list'); rList.innerHTML = '<h4>Recent Sales</h4>';
+        let sVal = 0, tSale = 0, today = new Date().toLocaleDateString();
+        
+        // Render Stock List
+        let sList = document.getElementById('stock-list'); sList.innerHTML = '';
+        inv.forEach(it => {
+            sVal += (it.buy * it.qty);
+            sList.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                <div><b>${it.name}</b><br><small>Stock: ${it.qty} | Price: ₹${it.retail}</small></div>
+                <button class="nav-btn" onclick="editItem('${it.id}')" style="color:var(--accent)"><i class="fa fa-edit"></i></button>
+            </div>`;
+        });
+
+        // Render Sales List
+        let rList = document.getElementById('recent-list'); rList.innerHTML = '';
         sales.forEach(s => {
+            if(s.date === today) tSale += s.total;
             let div = document.createElement('div');
             div.className = 'card sale-card';
             div.onclick = function(e) { if(!e.target.closest('button')) this.classList.toggle('active'); };
-            
             div.innerHTML = `
-                <b>${s.cust}</b> <span style="float:right">₹${s.total}</span><br><small>${s.date}</small>
+                <button class="delete-btn" onclick="deleteSale('${s.id}')"><i class="fa fa-trash"></i></button>
+                <b>${s.cust}</b> <span style="float:right; font-weight:800; color:var(--accent);">₹${s.total}</span><br>
+                <small>${s.date}</small>
                 <div class="details-pane">
-                    ${s.items.map(i => `<div>${i.name} x${i.qty}</div>`).join('')}
-                    <button class="btn-return" onclick="returnSale('${s.id}')"><i class="fa fa-undo"></i> Return Bill</button>
-                    <button class="btn-reprint" onclick="reprintSale('${s.id}')"><i class="fa fa-print"></i> Reprint</button>
+                    ${s.items.map(i => `<div>• ${i.name} x${i.qty} - ₹${i.total}</div>`).join('')}
+                    <div style="display:flex; gap:10px; margin-top:15px;">
+                        <button style="flex:1; padding:10px; background:#f59e0b; color:white; border:none; border-radius:8px;" onclick="returnSale('${s.id}')">Return</button>
+                        <button style="flex:1; padding:10px; background:#6366f1; color:white; border:none; border-radius:8px;" onclick="printFullBill('${s.cust}','${s.date}','${s.total}',${JSON.stringify(s.items)})">Reprint</button>
+                    </div>
                 </div>`;
             rList.appendChild(div);
         });
 
+        document.getElementById('ds-stock').innerText = "₹ " + sVal;
+        document.getElementById('ds-sale').innerText = "₹ " + tSale;
+
         let sel = document.getElementById('item-pick');
-        sel.innerHTML = '<option value="">Select Item</option>';
-        inv.forEach((it, i) => sel.innerHTML += `<option value="${i}">${it.name}</option>`);
+        if(sel) {
+            sel.innerHTML = '<option value="">Select Item</option>';
+            inv.forEach((it, i) => sel.innerHTML += `<option value="${i}">${it.name}</option>`);
+        }
     }
 
-    window.saveItem = async () => { /* Add logic */ };
+    window.saveItem = async () => {
+        let id = document.getElementById('edit-id').value;
+        let data = { 
+            name: document.getElementById('i-name').value, 
+            buy: parseFloat(document.getElementById('i-buy').value), 
+            qty: parseFloat(document.getElementById('i-qty').value), 
+            retail: parseFloat(document.getElementById('i-retail').value) 
+        };
+        if(id) await updateDoc(doc(db, "inventory", id), data);
+        else await addDoc(collection(db, "inventory"), data);
+        location.reload();
+    };
+
+    window.editItem = (id) => {
+        if(prompt("Password:") !== ADMIN_PW) return;
+        let it = inv.find(x => x.id === id);
+        document.getElementById('edit-id').value = it.id;
+        document.getElementById('i-name').value = it.name;
+        document.getElementById('i-buy').value = it.buy;
+        document.getElementById('i-qty').value = it.qty;
+        document.getElementById('i-retail').value = it.retail;
+        window.tab('items');
+    };
+
+    window.deleteSale = async (id) => { if(prompt("Password:") === ADMIN_PW) await deleteDoc(doc(db, "sales", id)); };
+    window.sendDailyReport = () => { /* WhatsApp logic here */ };
 </script>
 </body>
 </html>
