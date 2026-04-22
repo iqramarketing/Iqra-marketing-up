@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iqra Marketing - Ultimate Pro</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root { --primary: #121826; --accent: #3b82f6; --bg: #f8fafc; --text: #1e293b; --success: #10b981; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); }
+        
+        .header { background: var(--primary); color: white; padding: 20px; display: flex; align-items: center; gap: 15px; border-radius: 0 0 20px 20px; }
+        .logo-box { background: white; color: black; font-weight: 900; width: 55px; height: 55px; border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .logo-box img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .nav-bar { display: grid; grid-template-columns: repeat(4, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .nav-btn { border: none; background: none; padding: 12px 5px; font-weight: 600; color: #64748b; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.75rem; }
+        .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); }
+        
+        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .card { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 15px; border: 1px solid #e2e8f0; position: relative; }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-card { padding: 15px; border-radius: 12px; color: white; text-align: center; }
+        
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 1rem; box-sizing: border-box; }
+        .btn-main { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 10px; transition: 0.3s; }
+        
+        /* PDF Template Styles */
+        #pdf-template { position: absolute; left: -9999px; width: 595px; background: white; padding: 40px; color: black; border: 1px solid #ddd; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .pdf-table th, .pdf-table td { border: 1px solid #444; padding: 10px; text-align: left; }
+        .pdf-table th { background: #f2f2f2; }
+        
+        .badge { padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: bold; color: white; }
+        .bg-gpay { background: #4285F4; }
+        .bg-cash { background: #10b981; }
+        .bg-credit { background: #f59e0b; }
+    </style>
+</head>
+<body>
+
+<div id="pdf-template">
+    <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
+        <h1 style="margin:0;">IQRA MARKETING</h1>
+        <p>Karuvanpadi - 679303 | Ph: 8089305300</p>
+    </div>
+    <div style="display: flex; justify-content: space-between;">
+        <div><b>Customer:</b> <span id="pdf-cust"></span></div>
+        <div style="text-align: right;">
+            <b>Date:</b> <span id="pdf-date"></span><br>
+            <b>Pay Mode:</b> <span id="pdf-pay"></span>
+        </div>
+    </div>
+    <table class="pdf-table">
+        <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>
+        <tbody id="pdf-items"></tbody>
+    </table>
+    <h2 style="text-align: right; margin-top: 25px;">Grand Total: ₹<span id="pdf-total"></span></h2>
+    <p style="text-align: center; margin-top: 50px; border-top: 1px solid #ccc; padding-top: 10px;">Thank You for your visit!</p>
+</div>
+
+<div class="header">
+    <div class="logo-box">IQRA</div>
+    <div class="header-info">
+        <h1 style="margin:0; font-size:1.3rem;">IQRA MARKETING</h1>
+        <p style="margin:0; font-size:0.8rem;">Karuvanpadi, Ph: 8089305300</p>
+    </div>
+</div>
+
+<nav class="nav-bar">
+    <button class="nav-btn active" id="b-home" onclick="tab('home')"><i class="fa fa-home"></i> Home</button>
+    <button class="nav-btn" id="b-bill" onclick="tab('bill')"><i class="fa fa-file-invoice"></i> Bill</button>
+    <button class="nav-btn" id="b-stock" onclick="tab('stock')"><i class="fa fa-boxes"></i> Stock</button>
+    <button class="nav-btn" id="b-report" onclick="tab('report')"><i class="fa fa-chart-line"></i> Report</button>
+</nav>
+
+<div class="container">
+    <div id="sec-home">
+        <div class="stats-grid">
+            <div class="stat-card" style="background:#4f46e5;"><h6>Stock Value</h6><h3 id="ds-stock">₹ 0</h3></div>
+            <div class="stat-card" style="background:#10b981;"><h6>Today Sales</h6><h3 id="ds-sale">₹ 0</h3></div>
+        </div>
+        <h4>Recent Transactions</h4>
+        <div id="recent-list"></div>
+    </div>
+
+    <div id="sec-bill" style="display:none">
+        <div class="card">
+            <h3>New Invoice</h3>
+            <input type="text" id="c-name" placeholder="Customer Name">
+            <input type="number" id="c-phone" placeholder="Customer WhatsApp No.">
+            <select id="item-pick"><option value="">Select Item</option></select>
+            <select id="p-type"><option value="retail">Retail Price</option><option value="wholesale">Wholesale Price</option></select>
+            <input type="number" id="s-qty" placeholder="Quantity">
+            <button class="btn-main" style="background:var(--accent); color:white;" onclick="addToCart()">+ Add to List</button>
+        </div>
+        <div class="card">
+            <div id="cart-items"></div>
+            <select id="pay-mode" style="margin-top:15px; border:2px solid var(--accent);">
+                <option value="Cash">Cash Payment</option>
+                <option value="Google Pay">Google Pay</option>
+                <option value="Credit">Credit (കടം)</option>
+            </select>
+            <h2 style="text-align:right">Total: ₹<span id="cart-total">0</span></h2>
+            <button class="btn-main" style="background:var(--success); color:white;" onclick="finishBill()">Save & Send WhatsApp</button>
+        </div>
+    </div>
+
+    <div id="sec-stock" style="display:none">
+        <div class="card">
+            <h3>Manage Stock</h3>
+            <input type="hidden" id="edit-id">
+            <input type="text" id="i-name" placeholder="Item Name">
+            <input type="number" id="i-buy" placeholder="Buy Price (Cost)">
+            <input type="number" id="i-ws" placeholder="Wholesale Price">
+            <input type="number" id="i-rt" placeholder="Retail Price">
+            <input type="number" id="i-qty" placeholder="Stock Quantity">
+            <button class="btn-main" style="background:var(--accent); color:white;" onclick="saveItem()">Save Product</button>
+            <button class="btn-main" style="background:#ef4444; color:white; margin-top:5px; font-size:0.8rem;" onclick="clearAllStock()">Full Stock Clearance</button>
+        </div>
+        <div id="stock-list"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = { apiKey: "AIzaSyDmviHo3-oZChgxScf4RTfQ9d8nMNxSgGI", authDomain: "iqra-marketing.firebaseapp.com", projectId: "iqra-marketing" };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const ADMIN_PW = "305300";
+
+    let inv = [], sales = [], cart = [];
+
+    onSnapshot(collection(db, "inventory"), (s) => { inv = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
+    onSnapshot(query(collection(db, "sales"), orderBy("timestamp", "desc")), (s) => { sales = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
+
+    window.tab = (id) => {
+        document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('sec-'+id).style.display = 'block';
+        document.getElementById('b-'+id).classList.add('active');
+    };
+
+    window.addToCart = () => {
+        let idx = document.getElementById('item-pick').value, qty = parseFloat(document.getElementById('s-qty').value), type = document.getElementById('p-type').value;
+        if(idx === "" || isNaN(qty)) return;
+        let it = inv[idx];
+        let price = type === 'wholesale' ? it.ws : it.rt;
+        cart.push({ name: it.name, qty, rate: price, total: price * qty, invId: it.id });
+        renderCart();
+    };
+
+    function renderCart() {
+        let b = document.getElementById('cart-items'); b.innerHTML = ''; let t = 0;
+        cart.forEach((c, i) => { t += c.total; b.innerHTML += `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #eee;"><span>${c.name} x ${c.qty}</span> <span>₹${c.total} <i class="fa fa-trash" style="color:red; margin-left:10px;" onclick="cart.splice(${i},1);renderCart();"></i></span></div>`; });
+        document.getElementById('cart-total').innerText = t;
+    }
+
+    window.finishBill = async () => {
+        let cust = document.getElementById('c-name').value || "Counter Sale", phone = document.getElementById('c-phone').value, pay = document.getElementById('pay-mode').value, total = document.getElementById('cart-total').innerText;
+        let date = new Date().toLocaleDateString();
+        if(total == "0") return;
+
+        // Generate PDF
+        document.getElementById('pdf-cust').innerText = cust;
+        document.getElementById('pdf-date').innerText = date;
+        document.getElementById('pdf-pay').innerText = pay;
+        document.getElementById('pdf-total').innerText = total;
+        document.getElementById('pdf-items').innerHTML = cart.map(i => `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.rate}</td><td>${i.total}</td></tr>`).join('');
+        
+        const canvas = await html2canvas(document.getElementById('pdf-template'));
+        const pdf = new jspdf.jsPDF();
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 0);
+        pdf.save(`Iqra_${cust}.pdf`);
+
+        // Save to Database
+        await addDoc(collection(db, "sales"), { cust, phone, total: parseFloat(total), items: cart, date, payMode: pay, timestamp: new Date() });
+        
+        // WhatsApp Notification
+        if(phone) {
+            let msg = `*IQRA MARKETING - BILL*%0A--------------------------%0A*Customer:* ${cust}%0A*Total:* ₹${total}%0A*Payment:* ${pay}%0A*Date:* ${date}%0A--------------------------%0AThank you!`;
+            window.open(`https://wa.me/91${phone}?text=${msg}`, '_blank');
+        }
+
+        // Update Stock
+        for(let c of cart) {
+            let it = inv.find(x => x.id === c.invId);
+            if(it) await updateDoc(doc(db, "inventory", it.id), { qty: it.qty - c.qty });
+        }
+        location.reload();
+    };
+
+    window.saveItem = async () => {
+        let id = document.getElementById('edit-id').value;
+        let d = { name: document.getElementById('i-name').value, buy: parseFloat(document.getElementById('i-buy').value), ws: parseFloat(document.getElementById('i-ws').value), rt: parseFloat(document.getElementById('i-rt').value), qty: parseFloat(document.getElementById('i-qty').value) };
+        if(id) await updateDoc(doc(db, "inventory", id), d);
+        else await addDoc(collection(db, "inventory"), d);
+        location.reload();
+    };
+
+    window.clearAllStock = async () => {
+        if(prompt("Type 'DELETE' to clear all stock:") === "DELETE") {
+            for(let it of inv) await deleteDoc(doc(db, "inventory", it.id));
+            location.reload();
+        }
+    };
+
+    function refreshUI() {
+        let sVal = 0, tSale = 0, today = new Date().toLocaleDateString();
+        inv.forEach(it => sVal += (it.buy * it.qty));
+        document.getElementById('ds-stock').innerText = "₹ " + sVal;
+
+        let rl = document.getElementById('recent-list'); rl.innerHTML = '';
+        sales.forEach(s => {
+            if(s.date === today) tSale += s.total;
+            let badge = s.payMode === 'Google Pay' ? 'bg-gpay' : (s.payMode === 'Cash' ? 'bg-cash' : 'bg-credit');
+            let div = document.createElement('div'); div.className = 'card';
+            div.innerHTML = `<b>${s.cust}</b> <span class="badge ${badge}" style="float:right">${s.payMode}</span><br><small>${s.date}</small> <span style="float:right; font-weight:800">₹${s.total}</span>`;
+            rl.appendChild(div);
+        });
+        document.getElementById('ds-sale').innerText = "₹ " + tSale;
+
+        let sel = document.getElementById('item-pick'); sel.innerHTML = '<option value="">Select Item</option>' + inv.map((it, i) => `<option value="${i}">${it.name} (Stock: ${it.qty})</option>`).join('');
+        let sl = document.getElementById('stock-list'); sl.innerHTML = inv.map(it => `
+            <div class="card" style="display:flex; justify-content:space-between;">
+                <div><b>${it.name}</b><br><small>Stock: ${it.qty} | WS: ₹${it.ws} | RT: ₹${it.rt}</small></div>
+                <button onclick="editStock('${it.id}')" style="border:none; background:none; color:blue;"><i class="fa fa-edit"></i></button>
+            </div>`).join('');
+    }
+
+    window.editStock = (id) => {
+        if(prompt("Enter Admin Password:") !== ADMIN_PW) return;
+        let it = inv.find(x => x.id === id);
+        document.getElementById('edit-id').value = it.id;
+        document.getElementById('i-name').value = it.name;
+        document.getElementById('i-buy').value = it.buy;
+        document.getElementById('i-ws').value = it.ws;
+        document.getElementById('i-rt').value = it.rt;
+        document.getElementById('i-qty').value = it.qty;
+        tab('stock');
+    };
+</script>
+</body>
+</html>
