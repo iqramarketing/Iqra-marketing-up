@@ -3,112 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iqra Marketing - Smart Invoice</title>
+    <title>Iqra Marketing - Cloud Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --primary: #1e293b; --accent: #2563eb; --bg: #f8fafc; --text: #334155; }
         body { font-family: 'Manjari', sans-serif; background: var(--bg); margin: 0; padding-bottom: 60px; color: var(--text); }
-        
         .header { background: var(--primary); color: white; padding: 25px 20px; display: flex; align-items: center; gap: 20px; border-radius: 0 0 25px 25px; }
-        .logo-container { background: white; width: 65px; height: 65px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #1e293b; font-weight: bold; }
+        .logo-container { background: white; width: 75px; height: 75px; border-radius: 12px; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .logo-container img { width: 100%; height: 100%; object-fit: contain; }
+        .shop-info h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
+        .shop-info p { margin: 2px 0; font-size: 0.85rem; opacity: 0.9; }
         .nav-bar { display: grid; grid-template-columns: repeat(4, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .nav-btn { border: none; background: none; padding: 15px 5px; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; }
         .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); background: #f1f5f9; }
         .container { padding: 15px; max-width: 900px; margin: 0 auto; }
-        .card { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .stat-box { padding: 15px; border-radius: 12px; color: white; text-align: center; }
+        .blue { background: #3b82f6; } .green { background: #10b981; } .red { background: #ef4444; } .purple { background: #8b5cf6; }
         input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-family: 'Manjari'; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
         .btn-primary { background: var(--accent); color: white; }
-
-        /* Print Style - Two Copies */
-        #print-area { display: none; }
-        .bill-copy { background: white; padding: 20px; border: 1px dashed #333; margin-bottom: 20px; color: black; }
-        .print-header { text-align: center; border-bottom: 1px solid #000; margin-bottom: 10px; padding-bottom: 5px; }
-        .print-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-        .print-table th, .print-table td { border: 1px solid #555; padding: 6px; text-align: left; }
-
-        @media print {
-            body * { display: none; }
-            #print-area { display: block !important; width: 100%; }
-            .no-print { display: none !important; }
-        }
-
-        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .stat-box { padding: 12px; border-radius: 12px; color: white; text-align: center; }
-        .blue { background: #3b82f6; } .green { background: #10b981; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
+        th { background: #f1f5f9; padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+        .bill-item-list { margin: 5px 0; padding-left: 15px; font-size: 0.8rem; color: #555; list-style: circle; }
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; }
+        @media print { .no-print, .nav-bar, .action-btns, .btn-del { display: none !important; } }
     </style>
 </head>
 <body>
 
-<div id="loading"><b>പ്രോസസ്സിംഗിലാണ്...</b></div>
+<div id="loading"><b>Loading...</b></div>
 
-<div id="print-area">
-    <div class="bill-copy" id="copy-1"></div>
-    <div class="bill-copy" id="copy-2"></div>
-</div>
-
-<div class="header no-print">
+<div class="header">
     <div class="logo-container">IQRA</div>
     <div class="shop-info">
         <h1>IQRA MARKETING</h1>
-        <p>Karuvanpadi | Ph: 8089305300</p>
+        <p>Karuvanpadi - 679303</p>
+        <p>Ph: 8089305300</p>
     </div>
 </div>
 
 <nav class="nav-bar no-print">
-    <button class="nav-btn active" onclick="tab('home')">Home</button>
-    <button class="nav-btn" onclick="tab('bill')">Billing</button>
-    <button class="nav-btn" onclick="tab('items')">Stock</button>
-    <button class="nav-btn" onclick="tab('report')">Credit</button>
+    <button class="nav-btn active" id="btn-home" onclick="tab('home')">Home</button>
+    <button class="nav-btn" id="btn-bill" onclick="tab('bill')">Billing</button>
+    <button class="nav-btn" id="btn-items" onclick="tab('items')">Stock</button>
+    <button class="nav-btn" id="btn-report" onclick="tab('report')">Credit</button>
 </nav>
 
-<div class="container no-print">
+<div class="container">
     <div id="sec-home">
         <div class="stats">
             <div class="stat-box blue"><h6>Stock Value</h6><h3 id="ds-stock">₹ 0</h3></div>
             <div class="stat-box green"><h6>Today Sale</h6><h3 id="ds-sale">₹ 0</h3></div>
+            <div class="stat-box red"><h6>Total Credit</h6><h3 id="ds-cred">₹ 0</h3></div>
+            <div class="stat-box purple"><h6>Cash/G-Pay</h6><h3 id="ds-cash">₹ 0</h3></div>
         </div>
-        <h4 style="margin: 20px 0 10px;">Recent Sales</h4>
+        <h4 style="margin: 20px 0 10px;">Recent Sales (Detailed)</h4>
         <div id="recent-list"></div>
     </div>
 
     <div id="sec-bill" style="display:none">
-        <div class="card">
+        <div class="card no-print">
             <h3>New Invoice</h3>
             <input type="text" id="cust-name" placeholder="Customer Name">
-            <input type="number" id="cust-phone" placeholder="WhatsApp Number (91...)">
             <select id="item-pick"><option value="">Select Item</option></select>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <select id="rate-type"><option value="retail">Retail Rate</option><option value="wholesale">Wholesale</option></select>
                 <input type="number" id="sale-qty" placeholder="Quantity">
-                <input type="number" id="sale-gst" placeholder="GST %" value="0">
             </div>
-            <button class="btn btn-primary" onclick="addToCart()">+ Add Item</button>
+            <input type="number" id="sale-gst" placeholder="GST %" value="0">
+            <button class="btn btn-primary" onclick="addToCart()">+ Add to List</button>
         </div>
         <div class="card">
-            <table style="width:100%; border-collapse: collapse;">
-                <thead><tr style="text-align:left;"><th>Item</th><th>Qty</th><th>Total</th></tr></thead>
+            <table id="cart-table">
+                <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>
                 <tbody id="cart-body"></tbody>
             </table>
-            <h2 style="text-align:right; color:var(--accent);">Total: ₹ <span id="cart-total">0</span></h2>
-            <select id="pay-method">
+            <div style="text-align: right; margin-top: 15px;">
+                <h2 style="color: var(--accent);">Grand Total: ₹ <span id="cart-total">0</span></h2>
+            </div>
+            <select id="pay-method" class="no-print">
                 <option value="cash">Cash</option><option value="gpay">G-Pay</option><option value="credit">Credit</option>
             </select>
-            <button class="btn btn-primary" style="background:#059669" onclick="finishBill()">Save, Print & WhatsApp</button>
+            <button class="btn btn-primary" style="background:#059669" onclick="finishBill()">Save & Print</button>
         </div>
     </div>
 
     <div id="sec-items" style="display:none">
         <div class="card">
-            <h3>Add Stock</h3>
+            <h3>Manage Stock</h3>
             <input type="text" id="i-name" placeholder="Item Name">
-            <input type="number" id="i-qty" placeholder="Quantity">
-            <input type="number" id="i-retail" placeholder="Rate">
-            <button class="btn btn-primary" onclick="saveItem()">Save</button>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <input type="number" id="i-buy" placeholder="Buy Rate">
+                <input type="number" id="i-qty" placeholder="Quantity">
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <input type="number" id="i-retail" placeholder="Retail Rate">
+                <input type="number" id="i-wholesale" placeholder="Wholesale Rate">
+            </div>
+            <button class="btn btn-primary" onclick="saveItem()">Save Item</button>
         </div>
-        <table id="stock-table" style="width:100%; background:white; margin-top:10px;">
+        <table>
+            <thead><tr><th>Item</th><th>Stock</th><th>Retail</th><th>Wholesale</th><th>Action</th></tr></thead>
             <tbody id="stock-body"></tbody>
         </table>
+    </div>
+
+    <div id="sec-report" style="display:none">
+        <h3>Credit Ledger</h3>
+        <div id="credit-list"></div>
     </div>
 </div>
 
@@ -129,103 +134,125 @@
     const db = getFirestore(app);
 
     let inv = [];
+    let sales = [];
     let cart = [];
 
     onSnapshot(collection(db, "inventory"), (s) => {
         inv = s.docs.map(d => ({ id: d.id, ...d.data() }));
-        let sel = document.getElementById('item-pick'); sel.innerHTML = '<option value="">Select Item</option>';
-        let sBody = document.getElementById('stock-body'); sBody.innerHTML = '';
-        inv.forEach((it, i) => {
-            sel.innerHTML += `<option value="${i}">${it.name}</option>`;
-            sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>₹${it.retail}</td></tr>`;
-        });
+        refreshUI();
     });
 
     onSnapshot(query(collection(db, "sales"), orderBy("timestamp", "desc")), (s) => {
-        let sales = s.docs.map(d => ({ id: d.id, ...d.data() }));
-        let rList = document.getElementById('recent-list'); rList.innerHTML = '';
-        sales.forEach(sl => {
-            rList.innerHTML += `<div class="card" style="padding:10px; margin-bottom:5px;"><b>${sl.cust}</b> - ₹${sl.total}</div>`;
-        });
+        sales = s.docs.map(d => ({ id: d.id, ...d.data() }));
+        refreshUI();
     });
 
     window.tab = (id) => {
-        document.getElementById('sec-home').style.display = id === 'home' ? 'block' : 'none';
-        document.getElementById('sec-bill').style.display = id === 'bill' ? 'block' : 'none';
-        document.getElementById('sec-items').style.display = id === 'items' ? 'block' : 'none';
+        document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('sec-'+id).style.display = 'block';
+        document.getElementById('btn-'+id).classList.add('active');
     };
 
     window.saveItem = async () => {
         let name = document.getElementById('i-name').value;
-        let qty = parseFloat(document.getElementById('i-qty').value);
-        let retail = parseFloat(document.getElementById('i-retail').value);
-        if(!name || isNaN(qty)) return;
-        await addDoc(collection(db, "inventory"), { name, qty, retail });
-        document.getElementById('i-name').value = ''; document.getElementById('i-qty').value = '';
+        let buy = parseFloat(document.getElementById('i-buy').value) || 0;
+        let qty = parseFloat(document.getElementById('i-qty').value) || 0;
+        let retail = parseFloat(document.getElementById('i-retail').value) || 0;
+        let wholesale = parseFloat(document.getElementById('i-wholesale').value) || 0;
+        if(!name) return;
+        await addDoc(collection(db, "inventory"), { name, buy, qty, retail, wholesale });
+        ['i-name', 'i-buy', 'i-qty', 'i-retail', 'i-wholesale'].forEach(id => document.getElementById(id).value = '');
     };
 
     window.addToCart = () => {
         let idx = document.getElementById('item-pick').value;
         let qty = parseFloat(document.getElementById('sale-qty').value);
+        let type = document.getElementById('rate-type').value;
         let gstP = parseFloat(document.getElementById('sale-gst').value) || 0;
-        if(idx==="" || isNaN(qty)) return;
+        if(idx==="" || !qty) return;
         let it = inv[idx];
-        let taxable = it.retail * qty;
-        let gstAmt = (taxable * gstP) / 100;
-        cart.push({ name: it.name, qty, rate: it.retail, gst: gstAmt, total: taxable + gstAmt, invId: it.id });
+        let rate = (type === 'retail') ? it.retail : it.wholesale;
+        let total = (rate * qty) + ((rate * qty * gstP) / 100);
+        cart.push({ name: it.name, qty, rate, total, invId: it.id });
         updateCartUI();
     };
 
     function updateCartUI() {
         let b = document.getElementById('cart-body'); b.innerHTML = '';
         let grand = 0;
-        cart.forEach(c => { grand += c.total; b.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>₹${c.total.toFixed(0)}</td></tr>`; });
-        document.getElementById('cart-total').innerText = grand.toFixed(0);
-    }
-
-    function createBillHTML(title, cust, total, items) {
-        let rows = items.map(i => `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.rate}</td><td>${i.total.toFixed(2)}</td></tr>`).join('');
-        return `
-            <div class="print-header">
-                <h2 style="margin:0;">IQRA MARKETING</h2>
-                <p>Karuvanpadi | Ph: 8089305300</p>
-                <h4 style="margin:5px 0; border:1px solid #000; display:inline-block; padding:2px 10px;">${title}</h4>
-            </div>
-            <p><b>Cust:</b> ${cust} | <b>Date:</b> ${new Date().toLocaleDateString()}</p>
-            <table class="print-table">
-                <tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr>
-                ${rows}
-            </table>
-            <h3 style="text-align:right;">Grand Total: ₹${total}</h3>
-            <p style="text-align:center; font-size:10px;">Thank you for your business!</p>
-        `;
+        cart.forEach(c => {
+            grand += c.total;
+            b.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.rate}</td><td>${c.total.toFixed(2)}</td></tr>`;
+        });
+        document.getElementById('cart-total').innerText = grand.toFixed(2);
     }
 
     window.finishBill = async () => {
-        let cust = document.getElementById('cust-name').value || "Cash Sale";
-        let phone = document.getElementById('cust-phone').value;
-        let total = document.getElementById('cart-total').innerText;
-        if(total == "0") return;
+        let total = parseFloat(document.getElementById('cart-total').innerText);
+        if(total <= 0) return;
+        document.getElementById('loading').style.display = 'flex';
+        
+        let now = new Date();
+        let saleData = {
+            cust: document.getElementById('cust-name').value || "Cash Sale",
+            total: total,
+            method: document.getElementById('pay-method').value,
+            items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.total })),
+            date: now.toLocaleDateString(),
+            time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp: now
+        };
 
-        // Set Print Copies
-        document.getElementById('copy-1').innerHTML = createBillHTML("OFFICE COPY", cust, total, cart);
-        document.getElementById('copy-2').innerHTML = createBillHTML("CUSTOMER COPY", cust, total, cart);
-
-        // Save to Firebase
-        await addDoc(collection(db, "sales"), { cust, total: parseFloat(total), timestamp: new Date(), date: new Date().toLocaleDateString() });
-
-        // WhatsApp Text
-        let msg = `*IQRA MARKETING - INVOICE*%0A--------------------------%0ACustomer: ${cust}%0ADate: ${new Date().toLocaleDateString()}%0A--------------------------%0A`;
-        cart.forEach(i => { msg += `${i.name} x ${i.qty} = ₹${i.total}%0A`; });
-        msg += `--------------------------%0A*Total Amount: ₹${total}*%0A_Thank you!_`;
-
-        // Action
-        window.print();
-        if(phone) {
-            window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+        await addDoc(collection(db, "sales"), saleData);
+        for(let c of cart) {
+            let it = inv.find(i => i.id === c.invId);
+            await updateDoc(doc(db, "inventory", c.invId), { qty: it.qty - c.qty });
         }
+        window.print();
         location.reload();
     };
+
+    function refreshUI() {
+        let sVal = 0, todaySale = 0, cred = 0, cash = 0;
+        let today = new Date().toLocaleDateString();
+
+        let sel = document.getElementById('item-pick'); sel.innerHTML = '<option value="">Select Item</option>';
+        let sBody = document.getElementById('stock-body'); sBody.innerHTML = '';
+        inv.forEach((it, i) => {
+            sVal += (it.buy * it.qty);
+            sel.innerHTML += `<option value="${i}">${it.name}</option>`;
+            sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td>${it.wholesale || 0}</td><td><button onclick="deleteItem('${it.id}')">Del</button></td></tr>`;
+        });
+
+        let rList = document.getElementById('recent-list'); rList.innerHTML = '';
+        let credMap = {};
+        sales.forEach(s => {
+            if(s.date === today) todaySale += s.total;
+            if(s.method === 'credit') { cred += s.total; credMap[s.cust] = (credMap[s.cust] || 0) + s.total; }
+            else cash += s.total;
+
+            let itemLines = (s.items || []).map(i => `<li>${i.name} (${i.qty}) - ₹${i.price.toFixed(0)}</li>`).join('');
+            rList.innerHTML += `
+                <div class="card" style="padding:12px; margin-bottom:8px; border-left: 5px solid var(--accent);">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span><b>${s.cust}</b> <small>(${s.method})</small><br><small>${s.date} ${s.time || ''}</small></span>
+                        <b style="color:var(--accent)">₹${s.total.toFixed(0)}</b>
+                    </div>
+                    <ul class="bill-item-list">${itemLines}</ul>
+                </div>`;
+        });
+
+        let cList = document.getElementById('credit-list'); cList.innerHTML = '';
+        for(let n in credMap) { cList.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; padding:12px;"><b>${n}</b><b style="color:red">₹${credMap[n].toFixed(0)}</b></div>`; }
+
+        document.getElementById('ds-stock').innerText = "₹ " + sVal.toFixed(0);
+        document.getElementById('ds-sale').innerText = "₹ " + todaySale.toFixed(0);
+        document.getElementById('ds-cred').innerText = "₹ " + cred.toFixed(0);
+        document.getElementById('ds-cash').innerText = "₹ " + cash.toFixed(0);
+    }
+
+    window.deleteItem = async (id) => { if(confirm("ഡിലീറ്റ് ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
 </script>
 </body>
 </html>
