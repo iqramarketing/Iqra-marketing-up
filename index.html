@@ -1,120 +1,154 @@
 <!DOCTYPE html>
-<html lang="ml">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iqra Marketing - Cloud Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&display=swap" rel="stylesheet">
+    <title>Iqra Marketing - Business Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #1e293b; --accent: #2563eb; --bg: #f8fafc; --text: #334155; }
-        body { font-family: 'Manjari', sans-serif; background: var(--bg); margin: 0; padding-bottom: 60px; color: var(--text); }
-        .header { background: var(--primary); color: white; padding: 25px 20px; display: flex; align-items: center; gap: 20px; border-radius: 0 0 25px 25px; }
-        .logo-container { background: white; width: 75px; height: 75px; border-radius: 12px; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #1e293b; font-weight: bold; }
-        .shop-info h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
-        .shop-info p { margin: 2px 0; font-size: 0.85rem; opacity: 0.9; }
+        :root { --primary: #0f172a; --accent: #2563eb; --bg: #f1f5f9; --text: #1e293b; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding-bottom: 60px; color: var(--text); }
+        
+        .header { background: var(--primary); color: white; padding: 20px; display: flex; align-items: center; gap: 15px; border-radius: 0 0 20px 20px; }
+        .logo-container { background: white; width: 55px; height: 55px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; font-size: 1.2rem; }
         .nav-bar { display: grid; grid-template-columns: repeat(4, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .nav-btn { border: none; background: none; padding: 15px 5px; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; }
-        .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); background: #f1f5f9; }
-        .container { padding: 15px; max-width: 900px; margin: 0 auto; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; position: relative; }
-        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .stat-box { padding: 15px; border-radius: 12px; color: white; text-align: center; }
-        .blue { background: #3b82f6; } .green { background: #10b981; } .red { background: #ef4444; } .purple { background: #8b5cf6; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-family: 'Manjari'; }
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .nav-btn { border: none; background: none; padding: 15px 5px; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; font-size: 0.85rem; }
+        .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); background: #f8fafc; }
+        
+        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .card { background: white; padding: 18px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 15px; position: relative; }
+        
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; outline: none; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s; }
         .btn-primary { background: var(--accent); color: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
-        th { background: #f1f5f9; padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
-        .bill-item-list { margin: 5px 0; padding-left: 15px; font-size: 0.8rem; color: #555; list-style: circle; }
-        .action-btns { position: absolute; top: 10px; right: 10px; display: flex; gap: 10px; }
-        .delete-btn { color: #ef4444; border: none; background: none; cursor: pointer; font-size: 1.1rem; }
-        .edit-btn { color: #2563eb; border: none; background: none; cursor: pointer; font-size: 1.1rem; }
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; }
-        @media print { .no-print, .nav-bar, .action-btns { display: none !important; } }
+        .btn-dark { background: var(--primary); color: white; }
+
+        .search-box { background: #fff; padding: 5px 12px; border: 1px solid var(--accent); border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .search-box input { border: none; margin: 0; }
+
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-box { padding: 15px; border-radius: 10px; color: white; text-align: center; }
+        .blue { background: #3b82f6; } .green { background: #10b981; }
+
+        .action-btns { position: absolute; top: 12px; right: 12px; display: flex; gap: 12px; }
+        .delete-btn { color: #ef4444; border: none; background: none; cursor: pointer; font-size: 1rem; }
+        .edit-btn { color: #2563eb; border: none; background: none; cursor: pointer; font-size: 1rem; }
+
+        /* Professional Invoice Print */
+        #print-area { display: none; }
+        .bill-copy { background: white; padding: 20px; border: 1px dashed #000; margin-bottom: 40px; color: black; min-height: 400px; }
+        .print-header { text-align: center; border-bottom: 1px solid #000; padding-bottom: 8px; }
+        .print-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .print-table th, .print-table td { border: 1px solid #000; padding: 6px; text-align: left; font-size: 12px; }
+
+        @media print {
+            body * { display: none !important; }
+            #print-area { display: block !important; width: 100%; }
+            #print-area * { display: block !important; }
+            .print-table, .print-table th, .print-table td { display: table !important; border: 1px solid black !important; }
+            .bill-copy { border: 1px dashed black !important; }
+        }
+
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); display:none; align-items:center; justify-content:center; z-index:1000; }
     </style>
 </head>
 <body>
 
-<div id="loading"><b>Loading...</b></div>
+<div id="loading"><b>Processing...</b></div>
 
-<div class="header">
+<div id="print-area">
+    <div id="copy-1" class="bill-copy"></div>
+    <div id="copy-2" class="bill-copy"></div>
+</div>
+
+<div class="header no-print">
     <div class="logo-container">IQRA</div>
     <div class="shop-info">
-        <h1>IQRA MARKETING</h1>
-        <p>Karuvanpadi - 679303</p>
-        <p>Ph: 8089305300</p>
+        <h1 style="margin:0; font-size: 1.2rem;">IQRA MARKETING</h1>
+        <p style="margin:0; font-size: 0.8rem; opacity:0.8;">Karuvanpadi - 679303 | 8089305300</p>
     </div>
 </div>
 
 <nav class="nav-bar no-print">
-    <button class="nav-btn active" id="btn-home" onclick="tab('home')">Home</button>
-    <button class="nav-btn" id="btn-bill" onclick="tab('bill')">Billing</button>
-    <button class="nav-btn" id="btn-items" onclick="tab('items')">Stock</button>
-    <button class="nav-btn" id="btn-report" onclick="tab('report')">Credit</button>
+    <button class="nav-btn active" id="btn-home" onclick="tab('home')"><i class="fa fa-home"></i> Home</button>
+    <button class="nav-btn" id="btn-bill" onclick="tab('bill')"><i class="fa fa-plus-circle"></i> Bill</button>
+    <button class="nav-btn" id="btn-items" onclick="tab('items')"><i class="fa fa-box"></i> Stock</button>
+    <button class="nav-btn" id="btn-report" onclick="tab('report')"><i class="fa fa-users"></i> Credit</button>
 </nav>
 
-<div class="container">
+<div class="container no-print">
     <div id="sec-home">
         <div class="stats">
             <div class="stat-box blue"><h6>Stock Value</h6><h3 id="ds-stock">₹ 0</h3></div>
-            <div class="stat-box green"><h6>Today Sale</h6><h3 id="ds-sale">₹ 0</h3></div>
-            <div class="stat-box red"><h6>Total Credit</h6><h3 id="ds-cred">₹ 0</h3></div>
-            <div class="stat-box purple"><h6>Cash/G-Pay</h6><h3 id="ds-cash">₹ 0</h3></div>
+            <div class="stat-box green"><h6>Today Sales</h6><h3 id="ds-sale">₹ 0</h3></div>
         </div>
-        <h4 style="margin: 20px 0 10px;">Recent Sales</h4>
+        <button class="btn btn-dark" onclick="sendDailyReport()">
+            <i class="fab fa-whatsapp"></i> Send Daily Report to Admin
+        </button>
+        <h4 style="margin: 20px 0 10px;">Recent Transactions</h4>
         <div id="recent-list"></div>
     </div>
 
     <div id="sec-bill" style="display:none">
-        <div class="card no-print">
-            <h3 id="bill-title">New Invoice</h3>
+        <div class="card">
+            <h3>New Invoice</h3>
             <input type="text" id="cust-name" placeholder="Customer Name">
+            <input type="number" id="cust-phone" placeholder="WhatsApp No (91...)">
+            <div class="search-box">
+                <i class="fa fa-search"></i>
+                <input type="text" id="bill-search" placeholder="Search Item..." onkeyup="filterItems('bill')">
+            </div>
             <select id="item-pick"><option value="">Select Item</option></select>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <select id="rate-type"><option value="retail">Retail</option><option value="wholesale">Wholesale</option></select>
                 <input type="number" id="sale-qty" placeholder="Quantity">
+                <input type="number" id="sale-gst" placeholder="GST %" value="0">
             </div>
-            <button class="btn btn-primary" onclick="addToCart()">+ Add to List</button>
+            <button class="btn btn-primary" onclick="addToCart()">+ Add to Bill</button>
         </div>
         <div class="card">
-            <table id="cart-table">
-                <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>
+            <table style="width:100%; border-collapse: collapse; margin-bottom: 10px;">
+                <thead><tr style="text-align:left; border-bottom: 1px solid #ddd;"><th>Item</th><th>Qty</th><th>Total</th></tr></thead>
                 <tbody id="cart-body"></tbody>
             </table>
-            <div style="text-align: right; margin-top: 15px;">
-                <h2 style="color: var(--accent);">Total: ₹ <span id="cart-total">0</span></h2>
-            </div>
-            <select id="pay-method" class="no-print">
-                <option value="cash">Cash</option><option value="gpay">G-Pay</option><option value="credit">Credit</option>
+            <h2 style="text-align:right; color:var(--accent);">Grand Total: ₹ <span id="cart-total">0</span></h2>
+            <select id="pay-method">
+                <option value="cash">Cash Payment</option><option value="gpay">G-Pay</option><option value="credit">Credit Sale</option>
             </select>
-            <button class="btn btn-primary" style="background:#059669" onclick="finishBill()" id="save-btn">Save & Print</button>
+            <button class="btn btn-primary" style="background:#059669" onclick="finishBill()">
+                <i class="fa fa-save"></i> Save, Print & WhatsApp
+            </button>
         </div>
     </div>
 
     <div id="sec-items" style="display:none">
         <div class="card">
-            <h3 id="item-form-title">Manage Stock</h3>
+            <h3 id="item-form-title">Stock Management</h3>
             <input type="text" id="i-name" placeholder="Item Name">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <input type="number" id="i-buy" placeholder="Buy Rate">
-                <input type="number" id="i-qty" placeholder="Quantity">
+                <input type="number" id="i-buy" placeholder="Purchase Rate">
+                <input type="number" id="i-qty" placeholder="Opening Stock">
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <input type="number" id="i-retail" placeholder="Retail Rate">
-                <input type="number" id="i-wholesale" placeholder="Wholesale Rate">
+                <input type="number" id="i-retail" placeholder="Retail Price">
+                <input type="number" id="i-wholesale" placeholder="Wholesale Price">
             </div>
-            <button class="btn btn-primary" onclick="processItemSave()" id="item-save-btn">Save Item</button>
+            <button class="btn btn-primary" onclick="processItemSave()">Save Item Data</button>
         </div>
-        <table>
-            <thead><tr><th>Item</th><th>Stock</th><th>Retail</th><th>Action</th></tr></thead>
-            <tbody id="stock-body"></tbody>
-        </table>
+        <div class="search-box">
+            <i class="fa fa-search"></i>
+            <input type="text" id="stock-search" placeholder="Search in Stock..." onkeyup="filterItems('stock')">
+        </div>
+        <div class="card" style="padding:0; overflow:hidden;">
+            <table style="width:100%; border-collapse: collapse;">
+                <thead style="background:#f8fafc;"><tr style="text-align:left;"><th>Item</th><th>Stock</th><th>Rate</th><th>Action</th></tr></thead>
+                <tbody id="stock-body"></tbody>
+            </table>
+        </div>
     </div>
 
     <div id="sec-report" style="display:none">
-        <h3>Credit Ledger</h3>
+        <h3>Customer Credit Balances</h3>
         <div id="credit-list"></div>
     </div>
 </div>
@@ -135,203 +169,148 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const ADMIN_PW = "305300";
+    const ADMIN_WHATSAPP = "918129377047";
 
-    let inv = [];
-    let sales = [];
-    let cart = [];
-    let editingSaleId = null;
-    let editingItemId = null;
+    let inv = [], sales = [], cart = [], editingItemId = null;
 
-    onSnapshot(collection(db, "inventory"), (s) => {
-        inv = s.docs.map(d => ({ id: d.id, ...d.data() }));
-        refreshUI();
-    });
-
-    onSnapshot(query(collection(db, "sales"), orderBy("timestamp", "desc")), (s) => {
-        sales = s.docs.map(d => ({ id: d.id, ...d.data() }));
-        refreshUI();
-    });
+    onSnapshot(collection(db, "inventory"), (s) => { inv = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
+    onSnapshot(query(collection(db, "sales"), orderBy("timestamp", "desc")), (s) => { sales = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
 
     window.tab = (id) => {
         document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('sec-'+id).style.display = 'block';
         document.getElementById('btn-'+id).classList.add('active');
-        if(id !== 'bill') { editingSaleId = null; cart = []; updateCartUI(); document.getElementById('bill-title').innerText = "New Invoice"; }
-        if(id !== 'items') { editingItemId = null; clearItemForm(); }
+    };
+
+    window.filterItems = (type) => {
+        let val = document.getElementById(type === 'bill' ? 'bill-search' : 'stock-search').value.toLowerCase();
+        if(type === 'bill') {
+            let sel = document.getElementById('item-pick'); sel.innerHTML = '<option value="">Select Item</option>';
+            inv.forEach((it, i) => { if(it.name.toLowerCase().includes(val)) sel.innerHTML += `<option value="${i}">${it.name}</option>`; });
+        } else { refreshUI(val); }
     };
 
     window.processItemSave = async () => {
-        if(editingItemId) {
-            let pw = prompt("ഐറ്റം മാറ്റാൻ പാസ്‌വേഡ് നൽകുക:");
-            if(pw !== ADMIN_PW) { alert("തെറ്റായ പാസ്‌വേഡ്!"); return; }
-        }
-        
+        if(editingItemId && prompt("Admin Password Required:") !== ADMIN_PW) return;
         let name = document.getElementById('i-name').value;
         let buy = parseFloat(document.getElementById('i-buy').value) || 0;
         let qty = parseFloat(document.getElementById('i-qty').value) || 0;
         let retail = parseFloat(document.getElementById('i-retail').value) || 0;
         let wholesale = parseFloat(document.getElementById('i-wholesale').value) || 0;
-        
         if(!name) return;
         document.getElementById('loading').style.display = 'flex';
-        
-        if(editingItemId) {
-            await updateDoc(doc(db, "inventory", editingItemId), { name, buy, qty, retail, wholesale });
-            editingItemId = null;
-            document.getElementById('item-form-title').innerText = "Manage Stock";
-        } else {
-            await addDoc(collection(db, "inventory"), { name, buy, qty, retail, wholesale });
-        }
-        
-        clearItemForm();
+        if(editingItemId) { await updateDoc(doc(db, "inventory", editingItemId), { name, buy, qty, retail, wholesale }); editingItemId = null; }
+        else { await addDoc(collection(db, "inventory"), { name, buy, qty, retail, wholesale }); }
+        ['i-name', 'i-buy', 'i-qty', 'i-retail', 'i-wholesale'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('loading').style.display = 'none';
     };
 
-    function clearItemForm() {
-        ['i-name', 'i-buy', 'i-qty', 'i-retail', 'i-wholesale'].forEach(id => document.getElementById(id).value = '');
-    }
-
     window.editItem = (id) => {
-        let it = inv.find(i => i.id === id);
-        if(!it) return;
-        editingItemId = id;
-        document.getElementById('item-form-title').innerText = "Edit Item: " + it.name;
-        document.getElementById('i-name').value = it.name;
-        document.getElementById('i-buy').value = it.buy;
-        document.getElementById('i-qty').value = it.qty;
-        document.getElementById('i-retail').value = it.retail;
-        document.getElementById('i-wholesale').value = it.wholesale;
-        window.scrollTo(0,0);
+        let it = inv.find(i => i.id === id); editingItemId = id;
+        document.getElementById('i-name').value = it.name; document.getElementById('i-buy').value = it.buy;
+        document.getElementById('i-qty').value = it.qty; document.getElementById('i-retail').value = it.retail;
+        document.getElementById('i-wholesale').value = it.wholesale; window.scrollTo(0,0);
     };
 
-    window.deleteItem = async (id) => {
-        let pw = prompt("ഐറ്റം ഡിലീറ്റ് ചെയ്യാൻ പാസ്‌വേഡ് നൽകുക:");
-        if(pw === ADMIN_PW) {
-            if(confirm("ഈ ഐറ്റം ഡിലീറ്റ് ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id));
-        } else if(pw != null) alert("തെറ്റായ പാസ്‌വേഡ്!");
-    };
+    window.deleteItem = async (id) => { if(prompt("Password to Delete Item:") === ADMIN_PW) await deleteDoc(doc(db, "inventory", id)); };
 
     window.addToCart = () => {
         let idx = document.getElementById('item-pick').value;
         let qty = parseFloat(document.getElementById('sale-qty').value);
-        let type = document.getElementById('rate-type').value;
+        let gstP = parseFloat(document.getElementById('sale-gst').value) || 0;
         if(idx==="" || isNaN(qty)) return;
-        let it = inv[idx];
-        let rate = (type === 'retail') ? (it.retail || 0) : (it.wholesale || 0);
-        cart.push({ name: it.name, qty, rate, total: rate * qty, invId: it.id });
+        let it = inv[idx]; let taxable = it.retail * qty; let gstAmt = (taxable * gstP) / 100;
+        cart.push({ name: it.name, qty, rate: it.retail, taxable, gstA: gstAmt, gstP: gstP, total: taxable + gstAmt, invId: it.id });
         updateCartUI();
     };
 
     function updateCartUI() {
-        let b = document.getElementById('cart-body'); b.innerHTML = '';
-        let grand = 0;
-        cart.forEach(c => {
-            grand += c.total;
-            b.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.rate}</td><td>${c.total.toFixed(0)}</td></tr>`;
-        });
+        let b = document.getElementById('cart-body'); b.innerHTML = ''; let grand = 0;
+        cart.forEach(c => { grand += c.total; b.innerHTML += `<tr style="border-bottom:1px solid #eee;"><td>${c.name}</td><td>${c.qty}</td><td>₹${c.total.toFixed(0)}</td></tr>`; });
         document.getElementById('cart-total').innerText = grand.toFixed(0);
     }
 
+    function generateBillHTML(type, cust, total, items) {
+        let rows = items.map(i => `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.rate}</td><td>${i.gstA.toFixed(2)}</td><td>${i.total.toFixed(2)}</td></tr>`).join('');
+        return `
+            <div class="print-header">
+                <h2 style="margin:0;">IQRA MARKETING</h2>
+                <p style="font-size:12px;">Karuvanpadi | Ph: 8089305300</p>
+                <div style="border:1px solid #000; padding:2px 10px; margin:5px 0; font-size:11px;">${type}</div>
+            </div>
+            <p style="font-size:12px;"><b>Customer:</b> ${cust} <span style="float:right"><b>Date:</b> ${new Date().toLocaleDateString()}</span></p>
+            <table class="print-table">
+                <thead><tr><th>Description</th><th>Qty</th><th>Price</th><th>GST</th><th>Total</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <h3 style="text-align:right; margin-top:10px;">Amount Payable: ₹${total}</h3>
+            <p style="text-align:center; font-size:11px;">Thank you for shopping with us!</p>
+        `;
+    }
+
     window.finishBill = async () => {
-        if(editingSaleId) {
-            let pw = prompt("ബില്ല് എഡിറ്റ് ചെയ്യാൻ പാസ്‌വേഡ് നൽകുക:");
-            if(pw !== ADMIN_PW) { alert("തെറ്റായ പാസ്‌വേഡ്!"); return; }
-        }
+        let cust = document.getElementById('cust-name').value || "Counter Sale";
+        let phone = document.getElementById('cust-phone').value;
+        let total = document.getElementById('cart-total').innerText;
+        if(total == "0") return;
 
-        let total = parseFloat(document.getElementById('cart-total').innerText);
-        if(isNaN(total) || total <= 0) return;
-        document.getElementById('loading').style.display = 'flex';
-        
-        let now = new Date();
-        let saleData = {
-            cust: document.getElementById('cust-name').value || "Cash Sale",
-            total: total,
-            method: document.getElementById('pay-method').value,
-            items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.total })),
-            date: now.toLocaleDateString(),
-            time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            timestamp: now
-        };
+        document.getElementById('copy-1').innerHTML = generateBillHTML("OFFICE COPY", cust, total, cart);
+        document.getElementById('copy-2').innerHTML = generateBillHTML("CUSTOMER COPY", cust, total, cart);
 
-        if(editingSaleId) {
-            await updateDoc(doc(db, "sales", editingSaleId), saleData);
-        } else {
-            await addDoc(collection(db, "sales"), saleData);
-            for(let c of cart) {
-                let it = inv.find(i => i.id === c.invId);
-                if(it) await updateDoc(doc(db, "inventory", c.invId), { qty: it.qty - c.qty });
-            }
-        }
-        
+        await addDoc(collection(db, "sales"), { cust, total: parseFloat(total), method: document.getElementById('pay-method').value, items: cart, timestamp: new Date(), date: new Date().toLocaleDateString() });
+        for(let c of cart) { let it = inv.find(i => i.id === c.invId); if(it) await updateDoc(doc(db, "inventory", c.invId), { qty: it.qty - c.qty }); }
+
+        let msg = `*IQRA MARKETING - BILL*%0A--------------------------%0ACustomer: ${cust}%0ADate: ${new Date().toLocaleDateString()}%0A--------------------------%0A`;
+        cart.forEach(i => { msg += `${i.name} x ${i.qty} = ₹${i.total.toFixed(0)}%0A`; });
+        msg += `--------------------------%0A*Grand Total: ₹${total}*%0A_Thank you!_`;
+
         window.print();
+        if(phone) window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
         location.reload();
     };
 
-    window.editSale = (id) => {
-        let s = sales.find(x => x.id === id);
-        if(!s) return;
-        tab('bill');
-        editingSaleId = id;
-        document.getElementById('bill-title').innerText = "Edit Invoice: " + s.cust;
-        document.getElementById('cust-name').value = s.cust;
-        document.getElementById('pay-method').value = s.method;
-        cart = s.items.map(i => ({ name: i.name, qty: i.qty, total: i.price, rate: i.price / i.qty }));
-        updateCartUI();
+    window.sendDailyReport = () => {
+        let today = new Date().toLocaleDateString(); let tSales = sales.filter(s => s.date === today);
+        if(tSales.length === 0) return alert("No Sales Recorded Today!");
+        let tot = 0, msg = `*DAILY SALES REPORT: IQRA*%0ADate: ${today}%0A--------------------------%0A`;
+        tSales.forEach((s, i) => { msg += `${i+1}. ${s.cust}: ₹${s.total}%0A`; tot += s.total; });
+        msg += `--------------------------%0A*Total Sales: ₹${tot}*`;
+        window.open(`https://wa.me/${ADMIN_WHATSAPP}?text=${msg}`, '_blank');
     };
 
-    window.deleteSale = async (id) => {
-        let pw = prompt("ബില്ല് ഡിലീറ്റ് ചെയ്യാൻ പാസ്‌വേഡ് നൽകുക:");
-        if(pw === ADMIN_PW) {
-            if(confirm("ഈ ബില്ല് സ്ഥിരമായി ഡിലീറ്റ് ചെയ്യണോ?")) await deleteDoc(doc(db, "sales", id));
-        } else if(pw != null) alert("തെറ്റായ പാസ്‌വേഡ്!");
-    };
+    window.deleteSale = async (id) => { if(prompt("Password to Delete Invoice:") === ADMIN_PW) await deleteDoc(doc(db, "sales", id)); };
 
-    function refreshUI() {
-        let sVal = 0, todaySale = 0, cred = 0, cash = 0;
-        let today = new Date().toLocaleDateString();
-
-        let sel = document.getElementById('item-pick'); sel.innerHTML = '<option value="">Select Item</option>';
+    function refreshUI(filter = '') {
+        let sVal = 0, todaySale = 0, cred = 0, today = new Date().toLocaleDateString();
         let sBody = document.getElementById('stock-body'); sBody.innerHTML = '';
+        let sel = document.getElementById('item-pick'); sel.innerHTML = '<option value="">Select Item</option>';
+
         inv.forEach((it, i) => {
             sVal += ((it.buy || 0) * (it.qty || 0));
             sel.innerHTML += `<option value="${i}">${it.name}</option>`;
-            sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td>
-                <button onclick="editItem('${it.id}')" class="edit-btn"><i class="fa fa-edit"></i></button>
-                <button onclick="deleteItem('${it.id}')" class="delete-btn"><i class="fa fa-trash"></i></button>
-            </td></tr>`;
+            if(!filter || it.name.toLowerCase().includes(filter)) {
+                sBody.innerHTML += `<tr style="border-bottom:1px solid #eee;"><td>${it.name}</td><td>${it.qty}</td><td>₹${it.retail}</td><td>
+                    <button onclick="editItem('${it.id}')" class="edit-btn"><i class="fa fa-edit"></i></button>
+                    <button onclick="deleteItem('${it.id}')" class="delete-btn"><i class="fa fa-trash"></i></button>
+                </td></tr>`;
+            }
         });
 
-        let rList = document.getElementById('recent-list'); rList.innerHTML = '';
-        let credMap = {};
+        let rList = document.getElementById('recent-list'); rList.innerHTML = ''; let cMap = {};
         sales.forEach(s => {
-            let sTotal = parseFloat(s.total) || 0;
-            if(s.date === today) todaySale += sTotal;
-            if(s.method === 'credit') { cred += sTotal; credMap[s.cust] = (credMap[s.cust] || 0) + sTotal; }
-            else cash += sTotal;
-
-            let itemLines = (s.items || []).map(i => `<li>${i.name} (${i.qty}) - ₹${(parseFloat(i.price) || 0).toFixed(0)}</li>`).join('');
-            rList.innerHTML += `
-                <div class="card" style="padding:12px; margin-bottom:8px; border-left: 5px solid var(--accent);">
-                    <div class="action-btns no-print">
-                        <button onclick="editSale('${s.id}')" class="edit-btn"><i class="fa fa-edit"></i></button>
-                        <button onclick="deleteSale('${s.id}')" class="delete-btn"><i class="fa fa-trash"></i></button>
-                    </div>
-                    <div style="display:flex; justify-content:space-between;">
-                        <span><b>${s.cust}</b> <small>(${s.method})</small><br><small>${s.date} ${s.time || ''}</small></span>
-                        <b style="color:var(--accent)">₹${sTotal.toFixed(0)}</b>
-                    </div>
-                    <ul class="bill-item-list">${itemLines}</ul>
-                </div>`;
+            if(s.date === today) todaySale += s.total;
+            if(s.method === 'credit') { cred += s.total; cMap[s.cust] = (cMap[s.cust] || 0) + s.total; }
+            rList.innerHTML += `<div class="card" style="padding:10px; border-left: 5px solid #2563eb;">
+                <button onclick="deleteSale('${s.id}')" class="delete-btn no-print" style="position:absolute; right:12px; top:12px;"><i class="fa fa-trash"></i></button>
+                <b>${s.cust}</b> <br> <h3 style="margin:5px 0; color:#2563eb;">₹${s.total}</h3> <small>${s.date}</small>
+            </div>`;
         });
 
-        let cList = document.getElementById('credit-list'); cList.innerHTML = '';
-        for(let n in credMap) { cList.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; padding:12px;"><b>${n}</b><b style="color:red">₹${credMap[n].toFixed(0)}</b></div>`; }
-
+        let clist = document.getElementById('credit-list'); clist.innerHTML = '';
+        for(let n in cMap) { clist.innerHTML += `<div class="card" style="display:flex; justify-content:space-between;"><b>${n}</b><b style="color:red">₹${cMap[n]}</b></div>`; }
         document.getElementById('ds-stock').innerText = "₹ " + sVal.toFixed(0);
         document.getElementById('ds-sale').innerText = "₹ " + todaySale.toFixed(0);
-        document.getElementById('ds-cred').innerText = "₹ " + cred.toFixed(0);
-        document.getElementById('ds-cash').innerText = "₹ " + cash.toFixed(0);
     }
 </script>
 </body>
