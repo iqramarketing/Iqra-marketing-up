@@ -3,60 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iqra Marketing - Professional Invoice</title>
+    <title>Iqra Marketing - Secure Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #1e293b; --accent: #2563eb; --bg: #f8fafc; }
         body { font-family: 'Manjari', sans-serif; background: var(--bg); margin: 0; padding-bottom: 60px; color: #334155; }
         
-        /* Updated Header with your details */
-        .header { background: var(--primary); color: white; padding: 25px 20px; display: flex; align-items: center; gap: 20px; border-radius: 0 0 25px 25px; }
-        .logo-container { background: white; width: 80px; height: 80px; border-radius: 12px; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .header { background: var(--primary); color: white; padding: 25px 20px; display: flex; align-items: center; justify-content: center; position: relative; border-radius: 0 0 25px 25px; }
+        .logo-container { background: white; width: 60px; height: 60px; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; position: absolute; left: 20px; }
         .logo-container img { width: 100%; height: 100%; object-fit: contain; }
-        .shop-info { text-align: left; }
-        .shop-info h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; font-weight: 700; }
-        .shop-info p { margin: 2px 0; font-size: 0.9rem; opacity: 0.9; }
+        .shop-info { text-align: center; }
+        .shop-info h1 { margin: 0; font-size: 1.3rem; }
+        .shop-info p { margin: 2px 0; font-size: 0.8rem; opacity: 0.8; }
 
         .nav-bar { display: grid; grid-template-columns: repeat(4, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .nav-btn { border: none; background: none; padding: 15px 5px; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; }
-        .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); background: #f1f5f9; }
+        .nav-btn { border: none; background: none; padding: 15px 5px; font-weight: bold; color: #64748b; cursor: pointer; }
+        .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); }
 
         .container { padding: 15px; max-width: 900px; margin: 0 auto; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .card { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
         
-        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        /* Dashboard Stats */
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .stat-box { padding: 15px; border-radius: 12px; color: white; text-align: center; }
         .blue { background: #3b82f6; } .green { background: #10b981; }
         .red { background: #ef4444; } .purple { background: #8b5cf6; }
 
         input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 5px; }
         .btn-primary { background: var(--accent); color: white; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
-        th { background: #f1f5f9; padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
-        
-        @media print {
-            .no-print, .nav-bar { display: none !important; }
-            body { background: white; }
-            .header { background: white !important; color: black !important; border-radius: 0; border-bottom: 2px solid #333; padding: 20px 0; }
-            .logo-container { border: 1px solid #ddd; box-shadow: none; }
-            .container { width: 100%; max-width: 100%; padding: 0; }
-            .card { box-shadow: none; border: none; padding: 10px 0; }
-        }
+        /* Admin Security Styles */
+        .admin-only { display: none; } /* Admin ഉള്ളപ്പോൾ മാത്രം കാണിക്കാൻ */
+        .login-btn { background: #64748b; color: white; padding: 8px 15px; border-radius: 5px; font-size: 12px; border: none; cursor: pointer; margin-top: 10px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { background: #f1f5f9; padding: 10px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #eee; }
+
+        .btn-edit { background: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 4px; border: none; margin-right: 5px; cursor: pointer; }
+        .btn-del { background: #fee2e2; color: #dc2626; padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; }
+
+        @media print { .no-print, .nav-bar, .login-area { display: none !important; } }
     </style>
 </head>
 <body>
 
 <div class="header">
     <div class="logo-container">
-        <img src="logo.png" alt="Iqra Logo" onerror="this.parentElement.innerHTML='IQRA'">
+        <img src="logo.png" alt="Logo" onerror="this.parentElement.innerHTML='IQRA'">
     </div>
     <div class="shop-info">
         <h1>IQRA MARKETING</h1>
-        <p>Karuvanpadi - 679303</p>
-        <p>Ph: 8089305300</p>
+        <p>Karuvanpadi - 8089305300</p>
     </div>
 </div>
 
@@ -75,76 +74,84 @@
             <div class="stat-box red"><h6>Total Credit</h6><h3 id="ds-cred">₹ 0</h3></div>
             <div class="stat-box purple"><h6>Cash/G-Pay</h6><h3 id="ds-cash">₹ 0</h3></div>
         </div>
-        <h4 style="margin: 20px 0 10px;">Recent Transactions</h4>
+        
+        <div class="login-area no-print" style="text-align: center; margin-top: 20px;">
+            <button class="login-btn" id="admin-login-btn" onclick="toggleAdmin()">Admin Login (For Edit/Delete)</button>
+        </div>
+
+        <h4 style="margin: 20px 0 10px;">Recent Sales</h4>
         <div id="recent-list"></div>
-        <center><button class="btn no-print" style="width: auto; background: #64748b; color: #fff; font-size: 11px; padding: 10px 20px;" onclick="downloadBackup()">📥 Download Data Backup</button></center>
+    </div>
+
+    <div id="sec-items" style="display:none">
+        <div class="card admin-only" id="add-stock-card">
+            <h3 id="stock-title">Add New Stock</h3>
+            <input type="hidden" id="edit-index" value="-1">
+            <input type="text" id="i-name" placeholder="Item Name">
+            <input type="number" id="i-buy" placeholder="Purchase Price (Buy Rate)">
+            <input type="number" id="i-qty" placeholder="Quantity">
+            <input type="number" id="i-retail" placeholder="Selling Price (Retail)">
+            <button class="btn btn-primary" onclick="saveItem()">Save to Inventory</button>
+        </div>
+        
+        <div class="card">
+            <h3>Inventory List</h3>
+            <table id="stock-table">
+                <thead><tr><th>Item</th><th>Stock</th><th>Rate</th><th class="admin-only">Action</th></tr></thead>
+                <tbody id="stock-body"></tbody>
+            </table>
+        </div>
     </div>
 
     <div id="sec-bill" style="display:none">
         <div class="card no-print">
-            <h3>Generate Invoice</h3>
+            <h3>New Invoice</h3>
             <input type="text" id="cust-name" placeholder="Customer Name">
             <select id="item-pick"><option value="">Select Item</option></select>
-            <div style="display:flex; gap:10px;">
-                <input type="number" id="sale-qty" placeholder="Qty" style="flex:1">
-                <input type="number" id="sale-gst" placeholder="GST %" value="0" style="flex:1">
-            </div>
-            <button class="btn btn-primary" onclick="addToCart()">+ Add to List</button>
+            <input type="number" id="sale-qty" placeholder="Quantity">
+            <button class="btn btn-primary" onclick="addToCart()">Add to Bill</button>
         </div>
         <div class="card">
             <table id="cart-table">
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>Qty</th>
-                        <th>Rate</th>
-                        <th>GST</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Item</th><th>Qty</th><th>Total</th></tr></thead>
                 <tbody id="cart-body"></tbody>
             </table>
-            <div style="text-align: right; margin-top: 20px; border-top: 2px solid #f1f5f9; padding-top: 10px;">
-                <p>Taxable Amt: ₹ <span id="tax-amt">0</span></p>
-                <p>Total GST: ₹ <span id="gst-amt">0</span></p>
-                <h2 style="color: var(--accent);">Grand Total: ₹ <span id="cart-total">0</span></h2>
-            </div>
-            <select id="pay-method" class="no-print" style="margin-bottom: 10px;">
-                <option value="cash">Cash Payment</option>
-                <option value="gpay">Google Pay</option>
-                <option value="credit">Credit (കടം)</option>
-            </select>
-            <button class="btn btn-primary" style="background:#059669" onclick="finishBill()">Save & Print Invoice</button>
+            <h2 style="text-align: right;">Total: ₹ <span id="cart-total">0</span></h2>
+            <select id="pay-method" class="no-print"><option value="cash">Cash</option><option value="gpay">G-Pay</option><option value="credit">Credit</option></select>
+            <button class="btn btn-primary" style="background:#059669" onclick="finishBill()">Save & Print</button>
         </div>
-    </div>
-
-    <div id="sec-items" style="display:none">
-        <div class="card">
-            <h3>New Stock Entry</h3>
-            <input type="text" id="i-name" placeholder="Item Name">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <input type="number" id="i-buy" placeholder="Purchase Price">
-                <input type="number" id="i-qty" placeholder="Quantity">
-            </div>
-            <input type="number" id="i-retail" placeholder="Selling Price">
-            <button class="btn btn-primary" onclick="saveItem()">Add to Stock</button>
-        </div>
-        <table id="stock-table">
-            <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Action</th></tr></thead>
-            <tbody id="stock-body"></tbody>
-        </table>
     </div>
 
     <div id="sec-report" style="display:none">
-        <h3>Customer Credit Ledger</h3>
+        <h3>Credit Customers</h3>
         <div id="credit-list"></div>
     </div>
 </div>
 
 <script>
-    let inv = JSON.parse(localStorage.getItem('iq_gst_inv')) || [];
-    let sales = JSON.parse(localStorage.getItem('iq_gst_sales')) || [];
+    let inv = JSON.parse(localStorage.getItem('iq_v4_inv')) || [];
+    let sales = JSON.parse(localStorage.getItem('iq_v4_sales')) || [];
     let cart = [];
+    let isAdmin = false;
+
+    function toggleAdmin() {
+        if (!isAdmin) {
+            let pass = prompt("Admin Password നൽകുക:");
+            if (pass === "1234") { // ഹനീഫ, ഇതാണ് പാസ്‌വേഡ്. ഇത് മാറ്റണമെങ്കിൽ ഇവിടെ മാറ്റാം.
+                isAdmin = true;
+                document.getElementById('admin-login-btn').innerText = "Admin Logged In (Click to Logout)";
+                document.getElementById('admin-login-btn').style.background = "#059669";
+                alert("അഡ്മിൻ ലോഗിൻ വിജയിച്ചു. ഇനി നിങ്ങൾക്ക് എഡിറ്റ് ചെയ്യാം.");
+            } else {
+                alert("തെറ്റായ പാസ്‌വേഡ്!");
+            }
+        } else {
+            isAdmin = false;
+            document.getElementById('admin-login-btn').innerText = "Admin Login (For Edit/Delete)";
+            document.getElementById('admin-login-btn').style.background = "#64748b";
+        }
+        refresh();
+    }
 
     function tab(id) {
         document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
@@ -155,98 +162,93 @@
     }
 
     function saveItem() {
+        if(!isAdmin) return alert("അഡ്മിന് മാത്രമേ ഇത് ചെയ്യാൻ അനുവാദമുള്ളൂ!");
         let name = document.getElementById('i-name').value;
+        let buy = parseFloat(document.getElementById('i-buy').value) || 0;
+        let qty = parseFloat(document.getElementById('i-qty').value) || 0;
+        let retail = parseFloat(document.getElementById('i-retail').value) || 0;
+        let index = parseInt(document.getElementById('edit-index').value);
+
         if(!name) return;
-        inv.push({
-            name: name,
-            buy: parseFloat(document.getElementById('i-buy').value) || 0,
-            qty: parseFloat(document.getElementById('i-qty').value) || 0,
-            retail: parseFloat(document.getElementById('i-retail').value) || 0
-        });
-        localStorage.setItem('iq_gst_inv', JSON.stringify(inv));
+        if(index === -1) inv.push({ name, buy, qty, retail });
+        else { inv[index] = { name, buy, qty, retail }; document.getElementById('edit-index').value = "-1"; }
+        
+        localStorage.setItem('iq_v4_inv', JSON.stringify(inv));
         location.reload();
+    }
+
+    function editItem(idx) {
+        tab('items');
+        let it = inv[idx];
+        document.getElementById('i-name').value = it.name;
+        document.getElementById('i-buy').value = it.buy;
+        document.getElementById('i-qty').value = it.qty;
+        document.getElementById('i-retail').value = it.retail;
+        document.getElementById('edit-index').value = idx;
+        document.getElementById('stock-title').innerText = "Edit Item Details";
+        window.scrollTo(0, 0);
+    }
+
+    function deleteItem(idx) {
+        if(confirm("ഡിലീറ്റ് ചെയ്യണമെന്നു ഉറപ്പാണോ?")) {
+            inv.splice(idx, 1);
+            localStorage.setItem('iq_v4_inv', JSON.stringify(inv));
+            refresh();
+        }
     }
 
     function addToCart() {
         let idx = document.getElementById('item-pick').value;
         let qty = parseFloat(document.getElementById('sale-qty').value);
-        let gstPer = parseFloat(document.getElementById('sale-gst').value) || 0;
         if(idx==="" || !qty) return;
-        
         let it = inv[idx];
-        let baseRate = it.retail;
-        let totalNoTax = baseRate * qty;
-        let gstAmt = (totalNoTax * gstPer) / 100;
-        
-        cart.push({
-            name: it.name,
-            qty: qty,
-            rate: baseRate,
-            gstPer: gstPer,
-            gstAmt: gstAmt,
-            total: totalNoTax + gstAmt,
-            invIdx: idx
-        });
+        cart.push({ name: it.name, qty, total: it.retail * qty, invIdx: idx });
         updateCartUI();
     }
 
     function updateCartUI() {
         let b = document.getElementById('cart-body'); b.innerHTML = '';
-        let taxTot = 0, gstTot = 0, grandTot = 0;
-        cart.forEach(c => {
-            taxTot += (c.rate * c.qty);
-            gstTot += c.gstAmt;
-            grandTot += c.total;
-            b.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.rate}</td><td>${c.gstPer}%</td><td>${c.total.toFixed(2)}</td></tr>`;
-        });
-        document.getElementById('tax-amt').innerText = taxTot.toFixed(2);
-        document.getElementById('gst-amt').innerText = gstTot.toFixed(2);
-        document.getElementById('cart-total').innerText = grandTot.toFixed(2);
+        let total = 0;
+        cart.forEach(c => { total += c.total; b.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.total}</td></tr>`; });
+        document.getElementById('cart-total').innerText = total;
     }
 
     function finishBill() {
         let t = parseFloat(document.getElementById('cart-total').innerText);
         if(t <= 0) return;
-        sales.push({
-            id: Date.now(),
-            cust: document.getElementById('cust-name').value || "Counter Sale",
-            total: t,
-            method: document.getElementById('pay-method').value,
-            time: new Date().toLocaleDateString()
-        });
+        sales.push({ id: Date.now(), cust: document.getElementById('cust-name').value || "Counter Sale", total: t, method: document.getElementById('pay-method').value, time: new Date().toLocaleDateString() });
         cart.forEach(c => { inv[c.invIdx].qty -= c.qty; });
-        localStorage.setItem('iq_gst_inv', JSON.stringify(inv));
-        localStorage.setItem('iq_gst_sales', JSON.stringify(sales));
+        localStorage.setItem('iq_v4_inv', JSON.stringify(inv));
+        localStorage.setItem('iq_v4_sales', JSON.stringify(sales));
         window.print();
         location.reload();
     }
 
-    function downloadBackup() {
-        let blob = new Blob([JSON.stringify({inv, sales})], {type: "application/json"});
-        let a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `Iqra_Backup_${new Date().toLocaleDateString()}.json`;
-        a.click();
-    }
-
     function refresh() {
+        // Admin View Toggle
+        let adminElements = document.querySelectorAll('.admin-only');
+        adminElements.forEach(el => el.style.display = isAdmin ? 'block' : 'none');
+        if(isAdmin) document.getElementById('add-stock-card').style.display = 'block';
+
         let sVal = 0, today = 0, cred = 0, cash = 0;
         inv.forEach(i => sVal += (i.buy * i.qty));
+        
         let sel = document.getElementById('item-pick'); sel.innerHTML = '<option value="">Select Item</option>';
         let sBody = document.getElementById('stock-body'); sBody.innerHTML = '';
+        
         inv.forEach((it, i) => {
             sel.innerHTML += `<option value="${i}">${it.name}</option>`;
-            sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td><button onclick="inv.splice(${i},1); localStorage.setItem('iq_gst_inv', JSON.stringify(inv)); refresh();" style="color:red; border:none; background:none; cursor:pointer;">Del</button></td></tr>`;
+            let actionHtml = isAdmin ? `<td class="admin-only"><button class="btn-edit" onclick="editItem(${i})">Edit</button><button class="btn-del" onclick="deleteItem(${i})">Del</button></td>` : '';
+            sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td>${actionHtml}</tr>`;
         });
+
         let rList = document.getElementById('recent-list'); rList.innerHTML = '';
-        let credMap = {};
         sales.forEach(s => {
             today += s.total;
-            if(s.method === 'credit') { cred += s.total; credMap[s.cust] = (credMap[s.cust] || 0) + s.total; } 
-            else { cash += s.total; }
-            rList.innerHTML = `<div style="background:white; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; box-shadow:0 1px 3px rgba(0,0,0,0.1)"><span><b>${s.cust}</b><br><small>${s.time}</small></span><b>₹${s.total.toFixed(0)}</b></div>` + rList.innerHTML;
+            if(s.method === 'credit') cred += s.total; else cash += s.total;
+            rList.innerHTML = `<div style="background:#fff; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; box-shadow:0 1px 3px rgba(0,0,0,0.1)"><span><b>${s.cust}</b><br><small>${s.time}</small></span><b>₹${s.total.toFixed(0)}</b></div>` + rList.innerHTML;
         });
-        for(let n in credMap) { if(credMap[n]>0) document.getElementById('credit-list').innerHTML += `<div style="background:white; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between;"><b>${n}</b><b style="color:red">₹${credMap[n].toFixed(0)}</b></div>`; }
+
         document.getElementById('ds-stock').innerText = "₹ " + sVal.toFixed(0);
         document.getElementById('ds-sale').innerText = "₹ " + today.toFixed(0);
         document.getElementById('ds-cred').innerText = "₹ " + cred.toFixed(0);
