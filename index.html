@@ -46,7 +46,6 @@
 
         /* PRINT SETTINGS */
         @media print { 
-            /* ഇവിടെ .header ഒഴിവാക്കി, അപ്പോൾ കടയുടെ പേര് വരും */
             .no-print, .nav-bar, .btn-del, .btn-edit, .action-area, .btn, #loading, #bill-title, .search-container { 
                 display: none !important; 
             } 
@@ -56,6 +55,7 @@
             .container { width: 100%; padding: 0; margin: 0; } 
             .card { box-shadow: none; border: none; padding: 10px; width: 100%; } 
             th, td { border-bottom: 1px solid #ddd !important; }
+            .summary-item { margin: 2px 0; }
         }
     </style>
 </head>
@@ -125,9 +125,10 @@
                 <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>GST</th><th>Total</th><th class="no-print">Action</th></tr></thead>
                 <tbody id="cart-body"></tbody>
             </table>
-            <div style="text-align: right; margin-top: 15px;">
-                <p>Taxable Amt: ₹ <span id="tax-amt">0</span> | GST Amt: ₹ <span id="gst-amt">0</span></p>
-                <h2 style="color: var(--accent);">Grand Total: ₹ <span id="cart-total">0</span></h2>
+            <div style="text-align: right; margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px;">
+                <div class="summary-item">Taxable Amt: ₹ <span id="tax-amt">0.00</span></div>
+                <div class="summary-item">GST Amt: ₹ <span id="gst-amt">0.00</span></div>
+                <h2 style="color: var(--accent); margin: 5px 0;">Grand Total: ₹ <span id="cart-total">0.00</span></h2>
             </div>
             <select id="pay-method" class="no-print">
                 <option value="cash">Cash</option>
@@ -300,7 +301,6 @@
         const total = parseFloat(document.getElementById('cart-total').innerText);
         if(total <= 0) return;
 
-        // വിസിറ്റ് എഗൈൻ മെസ്സേജ് ചേർക്കുന്നു
         const cartBody = document.getElementById('cart-body');
         const thankYouRow = `
             <tr>
