@@ -123,7 +123,7 @@
     <div id="sec-return" style="display:none">
         <div class="card">
             <h3>Sales Return (വിൽപ്പന തിരിച്ചെടുക്കൽ)</h3>
-            <input type="text" id="ret-bill-id" placeholder="Enter Sales ID / Customer Name">
+            <input type="text" id="ret-bill-id" placeholder="Enter Customer Name or Bill Details">
             <button class="btn btn-primary" onclick="searchReturnBill()">Find Bill</button>
             <div id="return-bill-details" style="margin-top:20px;"></div>
         </div>
@@ -157,7 +157,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDmviHo3-oZChgxScf4RTfQ9d8nMNxSgGI",
@@ -185,7 +185,6 @@
         updateChart();
     });
 
-    // --- NAVIGATION ---
     window.tab = (id) => {
         document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -193,7 +192,7 @@
         document.getElementById('btn-'+id).classList.add('active');
     };
 
-    // --- BILLING LOGIC ---
+    // --- BILLING ---
     window.filterItems = () => {
         const txt = document.getElementById('item-search').value.toLowerCase();
         const resDiv = document.getElementById('search-results');
@@ -262,51 +261,77 @@
         location.reload();
     };
 
-    // --- SALES RETURN LOGIC ---
+    // --- SALES RETURN ---
     window.searchReturnBill = () => {
         const searchTxt = document.getElementById('ret-bill-id').value.toLowerCase();
-        const bill = sales.find(s => s.id.includes(searchTxt) || s.cust.toLowerCase().includes(searchTxt));
+        const results = sales.filter(s => s.cust.toLowerCase().includes(searchTxt));
         const container = document.getElementById('return-bill-details');
         
-        if(!bill) { container.innerHTML = "Bill not found!"; return; }
+        if(results.length === 0) { container.innerHTML = "No matching bills found!"; return; }
 
-        let html = `<h4>Customer: ${bill.cust} | Date: ${bill.date}</h4><table>`;
-        bill.items.forEach((item, idx) => {
-            html += `<tr><td>${item.name} (${item.qty})</td><td><button class="btn-del" style="background:orange; color:white;" onclick="returnItem('${bill.id}', ${idx})">Return This</button></td></tr>`;
+        let html = '';
+        results.forEach(bill => {
+            html += `<div class="card" style="border: 1px solid #ddd;">
+                <h4>${bill.cust} (${bill.date}) - Total: ₹${bill.total}</h4>
+                <table><thead><tr><th>Item</th><th>Sold Qty</th><th>Return Qty</th><th>Action</th></tr></thead><tbody>`;
+            
+            bill.items.forEach((item, idx) => {
+                html += `<tr>
+                    <td>${item.name}</td>
+                    <td>${item.qty}</td>
+                    <td><input type="number" id="ret-qty-${bill.id}-${idx}" value="1" min="1" max="${item.qty}" style="width:60px; padding:5px; margin:0;"></td>
+                    <td><button class="btn-del" style="background:orange; color:white;" onclick="processReturn('${bill.id}', ${idx})">Return</button></td>
+                </tr>`;
+            });
+            html += `</tbody></table></div>`;
         });
-        html += `</table>`;
         container.innerHTML = html;
     };
 
-    window.returnItem = async (saleId, itemIndex) => {
-        if(!confirm("ഈ ഐറ്റം സ്റ്റോക്കിലേക്ക് തിരിച്ചെടുക്കണോ?")) return;
-        
-        const saleRef = doc(db, "sales", saleId);
+    window.processReturn = async (saleId, itemIdx) => {
+        const retQtyInput = document.getElementById(`ret-qty-${saleId}-${itemIdx}`);
+        const returnQty = parseFloat(retQtyInput.value);
         const sale = sales.find(s => s.id === saleId);
-        const item = sale.items[itemIndex];
+        const item = sale.items[itemIdx];
 
-        // 1. Update Stock
-        const itInInv = inv.find(i => i.id === item.invId);
-        if(itInInv) {
-            await updateDoc(doc(db, "inventory", item.invId), { qty: itInInv.qty + item.qty });
+        if(returnQty > item.qty || returnQty <= 0) return alert("Invalid Return Quantity!");
+
+        if(!confirm(`Return ${returnQty} nos of ${item.name}?`)) return;
+
+        // 1. Update Inventory Stock
+        const invItem = inv.find(i => i.id === item.invId);
+        if(invItem) {
+            await updateDoc(doc(db, "inventory", item.invId), { qty: invItem.qty + returnQty });
         }
 
-        // 2. Update Sales Record
+        // 2. Update Sale Record
         let updatedItems = [...sale.items];
-        updatedItems.splice(itemIndex, 1);
-        const newTotal = sale.total - item.total;
+        const returnAmount = item.rate * returnQty;
+
+        if(returnQty === item.qty) {
+            // Full item return
+            updatedItems.splice(itemIdx, 1);
+        } else {
+            // Partial item return
+            updatedItems[itemIdx].qty -= returnQty;
+            updatedItems[itemIdx].total -= returnAmount;
+        }
+
+        const newBillTotal = sale.total - returnAmount;
 
         if(updatedItems.length === 0) {
-            await deleteDoc(saleRef);
-            alert("മുഴുവൻ ഐറ്റങ്ങളും റിട്ടേൺ ചെയ്തു. ബില്ല് ഡിലീറ്റ് ആയി.");
+            await deleteDoc(doc(db, "sales", saleId));
+            alert("All items returned. Bill deleted.");
         } else {
-            await updateDoc(saleRef, { items: updatedItems, total: newTotal });
-            alert("ഐറ്റം റിട്ടേൺ ചെയ്തു. ബില്ല് അപ്‌ഡേറ്റ് ആയി.");
+            await updateDoc(doc(db, "sales", saleId), { items: updatedItems, total: newBillTotal });
+            alert("Item returned and bill updated.");
         }
+        
         document.getElementById('return-bill-details').innerHTML = '';
+        document.getElementById('ret-bill-id').value = '';
     };
 
-    // --- STOCK & UI HELPERS ---
+    // --- STOCK & HELPERS ---
     window.saveItem = async () => {
         const data = {
             name: document.getElementById('i-name').value,
@@ -319,35 +344,24 @@
         alert("Product Added");
     };
 
-    window.sendWhatsApp = () => {
-        let phone = document.getElementById('cust-phone').value;
-        if(!phone) return alert("Phone number required");
-        let msg = `*IQRA MARKETING*\nTotal: ₹${document.getElementById('cart-total').innerText}\nItems:\n`;
-        cart.forEach(i => msg += `- ${i.name}: ${i.qty} x ${i.rate}\n`);
-        window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`);
-    };
-
     function refreshUI() {
         let sVal = 0, todaySale = 0, cred = 0, cash = 0;
         const today = new Date().toLocaleDateString();
-
         const sBody = document.getElementById('stock-body'); sBody.innerHTML = '';
         inv.forEach(it => {
             sVal += it.buy * it.qty;
             sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td><button onclick="deleteItem('${it.id}')" class="btn-del">Del</button></td></tr>`;
         });
-
         const rList = document.getElementById('recent-list'); rList.innerHTML = '';
         sales.forEach(s => {
             if(s.date === today) todaySale += s.total;
             if(s.method === 'credit') cred += s.total; else cash += s.total;
-            rList.innerHTML += `<div class="card" style="padding:10px; border-left:4px solid blue;"><b>${s.cust}</b>: ₹${s.total} <br><small>ID: ${s.id}</small></div>`;
+            rList.innerHTML += `<div class="card" style="padding:10px; border-left:4px solid blue;"><b>${s.cust}</b>: ₹${s.total.toFixed(0)} <br><small>${s.date}</small></div>`;
         });
-
-        document.getElementById('ds-stock').innerText = "₹ " + sVal.toLocaleString();
-        document.getElementById('ds-sale').innerText = "₹ " + todaySale.toLocaleString();
-        document.getElementById('ds-cred').innerText = "₹ " + cred.toLocaleString();
-        document.getElementById('ds-cash').innerText = "₹ " + cash.toLocaleString();
+        document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString();
+        document.getElementById('ds-sale').innerText = "₹ " + Math.round(todaySale).toLocaleString();
+        document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString();
+        document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString();
     }
 
     window.deleteItem = async (id) => { if(confirm("Delete product?")) await deleteDoc(doc(db, "inventory", id)); };
@@ -355,10 +369,18 @@
     function updateChart() {
         const ctx = document.getElementById('salesChart').getContext('2d');
         if(salesChart) salesChart.destroy();
-        const data = sales.slice(0,7).map(s => s.total);
-        const labels = sales.slice(0,7).map(s => s.date);
+        const labels = sales.slice(0,7).map(s => s.date).reverse();
+        const data = labels.map(l => sales.filter(s => s.date === l).reduce((a, b) => a + b.total, 0));
         salesChart = new Chart(ctx, { type:'line', data:{labels, datasets:[{label:'Sales', data, borderColor:'blue', fill:true}]} });
     }
+
+    window.sendWhatsApp = () => {
+        let phone = document.getElementById('cust-phone').value;
+        if(!phone) return alert("Phone number required");
+        let msg = `*IQRA MARKETING*\nTotal: ₹${document.getElementById('cart-total').innerText}\nItems:\n`;
+        cart.forEach(i => msg += `- ${i.name}: ${i.qty} x ${i.rate}\n`);
+        window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`);
+    };
 </script>
 </body>
 </html>
