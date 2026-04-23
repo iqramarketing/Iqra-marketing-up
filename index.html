@@ -180,10 +180,8 @@
         refreshUI();
     });
 
-    // ഇവിടെയാണ് പുതിയ വരി മാറ്റം വരുത്തിയത് (orderBy ഒഴിവാക്കി)
     onSnapshot(collection(db, "sales"), (s) => {
         sales = s.docs.map(d => ({ id: d.id, ...d.data() }));
-        // ഡേറ്റാബേസിൽ നിന്ന് വന്നതിന് ശേഷം സമയം അനുസരിച്ച് സോർട്ട് ചെയ്യുന്നു
         sales.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
         refreshUI();
     });
@@ -367,7 +365,7 @@
         const sBody = document.getElementById('stock-body'); 
         sBody.innerHTML = '';
         inv.forEach((it) => {
-            sVal += (it.buy * it.qty);
+            sVal += (parseFloat(it.buy) * parseFloat(it.qty)) || 0;
             sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td><button class="btn-del" onclick="deleteItem('${it.id}')">Del</button></td></tr>`;
         });
 
@@ -377,13 +375,18 @@
         const credMap = {};
 
         sales.forEach(s => {
-            if(s.date === today) todaySale += s.total; 
+            const amt = parseFloat(s.total) || 0;
+            
+            // തീയതി പരിശോധന (Today Sale കണക്കാക്കാൻ)
+            if(s.date === today) {
+                todaySale += amt;
+            }
 
             if(s.method === 'credit') { 
-                cred += s.total; 
-                credMap[s.cust] = (credMap[s.cust] || 0) + s.total; 
+                cred += amt; 
+                credMap[s.cust] = (credMap[s.cust] || 0) + amt; 
             } else {
-                cash += s.total;
+                cash += amt;
             }
 
             const itemLines = (s.items || []).map(i => `<li>${i.name} (Qty: ${i.qty}) - ₹${i.total.toFixed(0)}</li>`).join('');
@@ -391,7 +394,7 @@
                 <div class="card" style="padding:12px; margin-bottom:8px; border-left: 5px solid var(--accent);">
                     <div style="display:flex; justify-content:space-between;">
                         <span><b>${s.cust}</b> <small>(${s.method})</small><br><small>${s.date} ${s.time || ''}</small></span>
-                        <b style="color:var(--accent)">₹${s.total.toFixed(0)}</b>
+                        <b style="color:var(--accent)">₹${amt.toFixed(0)}</b>
                     </div>
                     <ul class="bill-item-list">${itemLines}</ul>
                     <div class="action-area no-print" style="margin-top:10px; text-align:right;">
@@ -412,10 +415,10 @@
                 </div>`; 
         }
 
-        document.getElementById('ds-stock').innerText = "₹ " + sVal.toLocaleString('en-IN');
-        document.getElementById('ds-sale').innerText = "₹ " + todaySale.toLocaleString('en-IN');
-        document.getElementById('ds-cred').innerText = "₹ " + cred.toLocaleString('en-IN');
-        document.getElementById('ds-cash').innerText = "₹ " + cash.toLocaleString('en-IN');
+        document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString('en-IN');
+        document.getElementById('ds-sale').innerText = "₹ " + Math.round(todaySale).toLocaleString('en-IN');
+        document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString('en-IN');
+        document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
     }
 
     window.deleteItem = async (id) => { if(confirm("നീക്കം ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
