@@ -158,7 +158,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDmviHo3-oZChgxScf4RTfQ9d8nMNxSgGI",
@@ -180,20 +180,20 @@
         refreshUI();
     });
 
-    onSnapshot(query(collection(db, "sales"), orderBy("timestamp", "desc")), (s) => {
+    // ഇവിടെയാണ് പുതിയ വരി മാറ്റം വരുത്തിയത് (orderBy ഒഴിവാക്കി)
+    onSnapshot(collection(db, "sales"), (s) => {
         sales = s.docs.map(d => ({ id: d.id, ...d.data() }));
+        // ഡേറ്റാബേസിൽ നിന്ന് വന്നതിന് ശേഷം സമയം അനുസരിച്ച് സോർട്ട് ചെയ്യുന്നു
+        sales.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
         refreshUI();
     });
 
-    // 1. കസ്റ്റമർമാരെ ഫിൽട്ടർ ചെയ്യാൻ
     window.filterCustomers = () => {
         const txt = document.getElementById('cust-name').value.toLowerCase();
         const resDiv = document.getElementById('cust-results');
         if(!txt) { resDiv.style.display = 'none'; return; }
-
         const uniqueCusts = [...new Set(sales.map(s => s.cust))];
         const filtered = uniqueCusts.filter(c => c.toLowerCase().includes(txt));
-
         resDiv.innerHTML = '';
         if(filtered.length > 0) {
             resDiv.style.display = 'block';
@@ -207,9 +207,7 @@
                 };
                 resDiv.appendChild(div);
             });
-        } else {
-            resDiv.style.display = 'none';
-        }
+        } else { resDiv.style.display = 'none'; }
     };
 
     window.filterItems = () => {
@@ -366,7 +364,6 @@
         let sVal = 0, todaySale = 0, cred = 0, cash = 0;
         const today = new Date().toLocaleDateString();
 
-        // Stock Update
         const sBody = document.getElementById('stock-body'); 
         sBody.innerHTML = '';
         inv.forEach((it) => {
@@ -377,7 +374,6 @@
         const rList = document.getElementById('recent-list'); 
         rList.innerHTML = '';
         
-        // 2. ഒരേ കസ്റ്റമറെ ഗ്രൂപ്പ് ചെയ്യാൻ CredMap ഉപയോഗിക്കുന്നു
         const credMap = {};
 
         sales.forEach(s => {
@@ -385,7 +381,6 @@
 
             if(s.method === 'credit') { 
                 cred += s.total; 
-                // ഇവിടെ പഴയ ബാലൻസും പുതിയതും കൂട്ടി വെക്കുന്നു
                 credMap[s.cust] = (credMap[s.cust] || 0) + s.total; 
             } else {
                 cash += s.total;
@@ -407,12 +402,11 @@
                 </div>`;
         });
 
-        // 3. ക്രെഡിറ്റ് ലിസ്റ്റ് (റിപ്പോർട്ട്) അപ്‌ഡേറ്റ് ചെയ്യുന്നു
         const cList = document.getElementById('credit-list'); 
         cList.innerHTML = '';
         for(let n in credMap) { 
             cList.innerHTML += `
-                <div class="card" style="display:flex; justify-content:space-between; padding:15px; border-left: 5px solid red;">
+                <div class="card" style="display:flex; justify-content:space-between; padding:15px; border-left: 5px solid red; margin-bottom:10px;">
                     <b>${n}</b>
                     <b style="color:red">Total Due: ₹${credMap[n].toFixed(0)}</b>
                 </div>`; 
