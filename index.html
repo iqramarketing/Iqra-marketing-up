@@ -36,7 +36,6 @@
         th { background: #f1f5f9; padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0; }
         td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
 
-        /* Search Box Styles */
         .search-container { position: relative; width: 100%; }
         .search-results { position: absolute; background: white; width: 100%; z-index: 10; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; display: none; }
         .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
@@ -182,12 +181,10 @@
         refreshUI();
     });
 
-    // SEARCH LOGIC
     window.filterItems = () => {
         const txt = document.getElementById('item-search').value.toLowerCase();
         const resDiv = document.getElementById('search-results');
         if(!txt) { resDiv.style.display = 'none'; return; }
-
         const filtered = inv.filter(i => i.name.toLowerCase().includes(txt));
         resDiv.innerHTML = '';
         if(filtered.length > 0) {
@@ -199,9 +196,7 @@
                 div.onclick = () => selectItem(it);
                 resDiv.appendChild(div);
             });
-        } else {
-            resDiv.style.display = 'none';
-        }
+        } else { resDiv.style.display = 'none'; }
     };
 
     function selectItem(it) {
@@ -234,21 +229,15 @@
         const qty = parseFloat(document.getElementById('sale-qty').value);
         const type = document.getElementById('rate-type').value;
         const gstP = parseFloat(document.getElementById('sale-gst').value) || 0;
-        
         if(!itId || !qty) return alert("Select Item & Quantity");
-        
         const it = inv.find(i => i.id === itId);
         if(!it) return;
-
         const rate = (type === 'retail') ? it.retail : (it.wholesale || it.retail);
         const baseTotal = rate * qty;
         const gstAmt = (baseTotal * gstP) / 100;
         const finalTotal = baseTotal + gstAmt;
-
         cart.push({ name: it.name, qty, rate, base: baseTotal, gstA: gstAmt, gstP, total: finalTotal, invId: it.id });
         updateCartUI();
-        
-        // Reset Search
         document.getElementById('item-search').value = '';
         document.getElementById('selected-item-id').value = '';
         document.getElementById('stock-hint').innerText = '';
@@ -267,16 +256,12 @@
         document.getElementById('cart-total').innerText = grand.toFixed(2);
     }
 
-    window.removeFromCart = (index) => {
-        cart.splice(index, 1);
-        updateCartUI();
-    };
+    window.removeFromCart = (index) => { cart.splice(index, 1); updateCartUI(); };
 
     window.finishBill = async () => {
         const total = parseFloat(document.getElementById('cart-total').innerText);
         if(total <= 0) return;
         document.getElementById('loading').style.display = 'flex';
-        
         const editId = document.getElementById('edit-bill-id').value;
         const now = new Date();
         const saleData = {
@@ -288,9 +273,7 @@
             time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             timestamp: now
         };
-
         if(editId) { await deleteSale(editId, false); }
-
         await addDoc(collection(db, "sales"), saleData);
         for(let c of cart) {
             const it = inv.find(i => i.id === c.invId);
@@ -303,10 +286,8 @@
     window.editBill = (id) => {
         const pw = prompt("ബില്ല് എഡിറ്റ് ചെയ്യാൻ പാസ്‌വേഡ് നൽകുക:");
         if (pw !== ADMIN_PW) return alert("തെറ്റായ പാസ്‌വേഡ്!");
-        
         const s = sales.find(x => x.id === id);
         if(!s) return;
-        
         tab('bill');
         document.getElementById('bill-title').innerText = "Editing Bill: " + s.cust;
         document.getElementById('edit-bill-id').value = s.id;
@@ -339,16 +320,13 @@
             if (pw !== ADMIN_PW) return alert("തെറ്റായ പാസ്‌വേഡ്!");
             if(!confirm("ഈ ബില്ല് ഡിലീറ്റ് ചെയ്യണോ?")) return;
         }
-
         const sDoc = await getDoc(doc(db, "sales", id));
         if(!sDoc.exists()) return;
         const sData = sDoc.data();
-        
         for(let item of sData.items) {
             const it = inv.find(i => i.id === item.invId);
             if(it) await updateDoc(doc(db, "inventory", item.invId), { qty: it.qty + item.qty });
         }
-        
         await deleteDoc(doc(db, "sales", id));
         if(withPrompt) location.reload();
     };
@@ -357,18 +335,28 @@
         let sVal = 0, todaySale = 0, cred = 0, cash = 0;
         const today = new Date().toLocaleDateString();
 
-        const sBody = document.getElementById('stock-body'); sBody.innerHTML = '';
+        // Stock Update
+        const sBody = document.getElementById('stock-body'); 
+        sBody.innerHTML = '';
         inv.forEach((it) => {
             sVal += (it.buy * it.qty);
             sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td><button class="btn-del" onclick="deleteItem('${it.id}')">Del</button></td></tr>`;
         });
 
-        const rList = document.getElementById('recent-list'); rList.innerHTML = '';
+        // Transactions & Ledger Logic
+        const rList = document.getElementById('recent-list'); 
+        rList.innerHTML = '';
         const credMap = {};
+
         sales.forEach(s => {
-            if(s.date === today) todaySale += s.total;
-            if(s.method === 'credit') { cred += s.total; credMap[s.cust] = (credMap[s.cust] || 0) + s.total; }
-            else cash += s.total;
+            if(s.date === today) todaySale += s.total; 
+
+            if(s.method === 'credit') { 
+                cred += s.total; 
+                credMap[s.cust] = (credMap[s.cust] || 0) + s.total; 
+            } else {
+                cash += s.total;
+            }
 
             const itemLines = (s.items || []).map(i => `<li>${i.name} (Qty: ${i.qty}) - ₹${i.total.toFixed(0)}</li>`).join('');
             rList.innerHTML += `
@@ -386,7 +374,8 @@
                 </div>`;
         });
 
-        const cList = document.getElementById('credit-list'); cList.innerHTML = '';
+        const cList = document.getElementById('credit-list'); 
+        cList.innerHTML = '';
         for(let n in credMap) { 
             cList.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; padding:12px;"><b>${n}</b><b style="color:red">₹${credMap[n].toFixed(0)}</b></div>`; 
         }
@@ -399,7 +388,6 @@
 
     window.deleteItem = async (id) => { if(confirm("നീക്കം ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
 
-    // Close search results when clicking outside
     document.addEventListener('click', (e) => {
         if(!e.target.closest('.search-container')) {
             document.getElementById('search-results').style.display = 'none';
