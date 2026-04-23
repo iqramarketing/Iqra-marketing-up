@@ -34,6 +34,7 @@
         .btn-primary { background: var(--accent); color: white; }
         .btn-wa { background: var(--whatsapp); color: white; }
         .btn-del { background: #fee2e2; color: #ef4444; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .btn-edit { background: #e0f2fe; color: #0369a1; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-right: 5px; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
         th { background: #f1f5f9; padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0; }
@@ -42,20 +43,26 @@
         .search-container { position: relative; width: 100%; }
         .search-results { position: absolute; background: white; width: 100%; z-index: 10; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; display: none; }
         .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+        .search-item:hover { background: #f1f5f9; }
         .stock-indicator { color: var(--success); font-weight: bold; font-size: 0.85rem; margin-bottom: 5px; display: block; }
 
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; }
+
         @media print { 
-            .no-print, .nav-bar, .btn-del, .btn, #loading, #bill-title, .search-container, .chart-container { display: none !important; } 
+            .no-print, .nav-bar, .btn-del, .btn-edit, .action-area, .btn, #loading, #bill-title, .search-container, .chart-container { 
+                display: none !important; 
+            } 
             body { padding: 0; background: white; color: black; }
             .header { background: transparent; color: black; padding: 10px 0; border-bottom: 1px solid #000; border-radius: 0; }
             .container { width: 100%; padding: 0; margin: 0; } 
             .card { box-shadow: none; border: none; padding: 10px; width: 100%; } 
+            th, td { border-bottom: 1px solid #ddd !important; }
         }
     </style>
 </head>
 <body>
 
-<div id="loading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none;"><b>Processing...</b></div>
+<div id="loading"><b>Processing...</b></div>
 
 <div class="header">
     <div class="logo-container">
@@ -83,10 +90,14 @@
             <div class="stat-box red"><h6>Total Credit</h6><h3 id="ds-cred">₹ 0</h3></div>
             <div class="stat-box purple"><h6>Cash/G-Pay</h6><h3 id="ds-cash">₹ 0</h3></div>
         </div>
+
         <div class="card no-print">
             <h4 style="margin-top: 0;">Sales Analysis</h4>
-            <div class="chart-container"><canvas id="salesChart"></canvas></div>
+            <div class="chart-container">
+                <canvas id="salesChart"></canvas>
+            </div>
         </div>
+
         <h4 style="margin: 20px 0 10px;">Recent Transactions</h4>
         <div id="recent-list"></div>
     </div>
@@ -94,8 +105,13 @@
     <div id="sec-bill" style="display:none">
         <div class="card no-print">
             <h3 id="bill-title">New Invoice</h3>
-            <input type="text" id="cust-name" placeholder="Customer Name">
-            <input type="number" id="cust-phone" placeholder="WhatsApp Number (With 91)">
+            <input type="hidden" id="edit-bill-id">
+            
+            <div class="search-container">
+                <input type="text" id="cust-name" placeholder="Customer Name" oninput="filterCustomers()">
+                <div id="cust-results" class="search-results"></div>
+            </div>
+            <input type="number" id="cust-phone" placeholder="WhatsApp Number (91 ഇല്ലെങ്കിലും കുഴപ്പമില്ല)">
             
             <div class="search-container">
                 <input type="text" id="item-search" placeholder="Search Item..." oninput="filterItems()">
@@ -111,15 +127,17 @@
                 </select>
                 <input type="number" id="sale-qty" placeholder="Quantity">
             </div>
+            <input type="number" id="sale-gst" placeholder="GST %" value="0">
             <button class="btn btn-primary" onclick="addToCart()">+ Add to List</button>
         </div>
-
         <div class="card">
-            <table>
-                <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th><th class="no-print">Action</th></tr></thead>
+            <table id="cart-table">
+                <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>GST</th><th>Total</th><th class="no-print">Action</th></tr></thead>
                 <tbody id="cart-body"></tbody>
             </table>
             <div style="text-align: right; margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px;">
+                <div class="summary-item">Taxable Amt: ₹ <span id="tax-amt">0.00</span></div>
+                <div class="summary-item">GST Amt: ₹ <span id="gst-amt">0.00</span></div>
                 <h2 style="color: var(--accent); margin: 5px 0;">Grand Total: ₹ <span id="cart-total">0.00</span></h2>
             </div>
             <select id="pay-method" class="no-print">
@@ -129,7 +147,7 @@
             </select>
             <button class="btn btn-primary" style="background:var(--success)" onclick="finishBill()">Save & Print Bill</button>
             <button class="btn btn-wa no-print" onclick="sendWhatsApp()">Share via WhatsApp</button>
-            <button class="btn no-print" style="background:#64748b;" onclick="location.reload()">New Bill</button>
+            <button class="btn no-print" style="background:#64748b;" onclick="location.reload()">Cancel / New Bill</button>
         </div>
     </div>
 
@@ -137,21 +155,33 @@
         <div class="card">
             <h3>Manage Stock</h3>
             <input type="text" id="i-name" placeholder="Item Name">
-            <input type="number" id="i-buy" placeholder="Purchase Rate">
-            <input type="number" id="i-qty" placeholder="Current Stock">
-            <input type="number" id="i-retail" placeholder="Retail Rate">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <input type="number" id="i-buy" placeholder="Purchase Rate">
+                <input type="number" id="i-qty" placeholder="Current Stock">
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <input type="number" id="i-retail" placeholder="Retail Rate">
+                <input type="number" id="i-wholesale" placeholder="Wholesale Rate">
+            </div>
             <button class="btn btn-primary" onclick="saveItem()">Save Product</button>
         </div>
         <div class="card">
-            <table id="stock-table"><thead><tr><th>Item</th><th>Stock</th><th>Action</th></tr></thead><tbody id="stock-body"></tbody></table>
+            <table>
+                <thead><tr><th>Item</th><th>Stock</th><th>Retail</th><th>Action</th></tr></thead>
+                <tbody id="stock-body"></tbody>
+            </table>
         </div>
     </div>
-    <div id="sec-report" style="display:none"><div id="credit-list"></div></div>
+
+    <div id="sec-report" style="display:none">
+        <h3>Credit Ledger (കടം വിവരങ്ങൾ)</h3>
+        <div id="credit-list"></div>
+    </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, updateDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDmviHo3-oZChgxScf4RTfQ9d8nMNxSgGI",
@@ -164,19 +194,33 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+
     let inv = [], sales = [], cart = [], salesChart = null;
+    const ADMIN_PW = "305300";
 
-    onSnapshot(collection(db, "inventory"), (s) => { inv = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
-    onSnapshot(collection(db, "sales"), (s) => { sales = s.docs.map(d => ({ id: d.id, ...d.data() })); updateChart(); refreshUI(); });
+    onSnapshot(collection(db, "inventory"), (s) => {
+        inv = s.docs.map(d => ({ id: d.id, ...d.data() }));
+        refreshUI();
+    });
 
-    // WhatsApp Function
+    onSnapshot(collection(db, "sales"), (s) => {
+        sales = s.docs.map(d => ({ id: d.id, ...d.data() }));
+        sales.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+        refreshUI();
+        updateChart();
+    });
+
+    // --- WhatsApp Share Logic ---
     window.sendWhatsApp = () => {
-        const phone = document.getElementById('cust-phone').value;
+        let phone = document.getElementById('cust-phone').value;
         const custName = document.getElementById('cust-name').value || "Customer";
         const total = document.getElementById('cart-total').innerText;
         
-        if (!phone) return alert("ദയവായി WhatsApp നമ്പർ നൽകുക!");
+        if (!phone) return alert("വാട്സാപ്പ് നമ്പർ നൽകുക!");
         if (cart.length === 0) return alert("ബില്ലിൽ ഐറ്റങ്ങൾ ഒന്നുമില്ല!");
+        
+        // Ensure 91 prefix
+        if (phone.length === 10) phone = "91" + phone;
 
         let message = `*IQRA MARKETING - BILLING*\n`;
         message += `--------------------------\n`;
@@ -185,20 +229,69 @@
         message += `*Items:*\n`;
         
         cart.forEach(item => {
-            message += `- ${item.name} | ${item.qty} x ${item.rate} = ₹${item.total}\n`;
+            message += `▪ ${item.name}\n  ${item.qty} x ${item.rate} = ₹${item.total.toFixed(2)}\n`;
         });
         
         message += `\n--------------------------\n`;
-        message += `*Total Amount: ₹${total}*\n`;
-        message += `Payment: ${document.getElementById('pay-method').value.toUpperCase()}\n`;
+        message += `*Grand Total: ₹${total}*\n`;
         message += `--------------------------\n`;
-        message += `_Thank you for visiting IQRA MARKETING!_`;
+        message += `_Thank you for shopping!_`;
 
         const encodedMsg = encodeURIComponent(message);
         window.open(`https://wa.me/${phone}?text=${encodedMsg}`, '_blank');
     };
 
-    // Original Logic Integration
+    // Chart Initialization
+    function updateChart() {
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        const dailyTotals = {};
+        sales.forEach(s => {
+            const date = s.date;
+            dailyTotals[date] = (dailyTotals[date] || 0) + (parseFloat(s.total) || 0);
+        });
+        const labels = Object.keys(dailyTotals).slice(0, 7).reverse();
+        const data = labels.map(l => dailyTotals[l]);
+        if (salesChart) salesChart.destroy();
+        salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Daily Sales (₹)',
+                    data: data,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
+            }
+        });
+    }
+
+    window.filterCustomers = () => {
+        const txt = document.getElementById('cust-name').value.toLowerCase();
+        const resDiv = document.getElementById('cust-results');
+        if(!txt) { resDiv.style.display = 'none'; return; }
+        const uniqueCusts = [...new Set(sales.map(s => s.cust))];
+        const filtered = uniqueCusts.filter(c => c.toLowerCase().includes(txt));
+        resDiv.innerHTML = '';
+        filtered.forEach(name => {
+            const div = document.createElement('div');
+            div.className = 'search-item';
+            div.innerText = name;
+            div.onclick = () => { document.getElementById('cust-name').value = name; resDiv.style.display = 'none'; };
+            resDiv.appendChild(div);
+        });
+        resDiv.style.display = filtered.length > 0 ? 'block' : 'none';
+    };
+
     window.filterItems = () => {
         const txt = document.getElementById('item-search').value.toLowerCase();
         const resDiv = document.getElementById('search-results');
@@ -208,58 +301,19 @@
         filtered.forEach(it => {
             const div = document.createElement('div');
             div.className = 'search-item';
-            div.innerHTML = `${it.name} (Stock: ${it.qty})`;
-            div.onclick = () => {
-                document.getElementById('item-search').value = it.name;
-                document.getElementById('selected-item-id').value = it.id;
-                document.getElementById('stock-hint').innerText = `Stock: ${it.qty}`;
-                resDiv.style.display = 'none';
-            };
+            div.innerHTML = `${it.name} <span style="float:right; color:#888;">Stock: ${it.qty}</span>`;
+            div.onclick = () => selectItem(it);
             resDiv.appendChild(div);
         });
-        resDiv.style.display = 'block';
+        resDiv.style.display = filtered.length > 0 ? 'block' : 'none';
     };
 
-    window.addToCart = () => {
-        const id = document.getElementById('selected-item-id').value;
-        const qty = parseFloat(document.getElementById('sale-qty').value);
-        const it = inv.find(i => i.id === id);
-        if(!it || !qty) return;
-        const rate = document.getElementById('rate-type').value === 'retail' ? it.retail : (it.wholesale || it.retail);
-        cart.push({ name: it.name, qty, rate, total: qty * rate, invId: it.id });
-        updateCartUI();
-    };
-
-    function updateCartUI() {
-        const b = document.getElementById('cart-body'); b.innerHTML = '';
-        let total = 0;
-        cart.forEach((c, i) => {
-            total += c.total;
-            b.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.rate}</td><td>₹${c.total}</td><td class="no-print"><button onclick="cart.splice(${i},1);updateCartUI()" class="btn-del">X</button></td></tr>`;
-        });
-        document.getElementById('cart-total').innerText = total.toFixed(2);
+    function selectItem(it) {
+        document.getElementById('item-search').value = it.name;
+        document.getElementById('selected-item-id').value = it.id;
+        document.getElementById('search-results').style.display = 'none';
+        document.getElementById('stock-hint').innerText = `Current Stock: ${it.qty}`;
     }
-
-    window.finishBill = async () => {
-        const total = parseFloat(document.getElementById('cart-total').innerText);
-        if(total <= 0) return;
-        document.getElementById('loading').style.display = 'flex';
-        const saleData = {
-            cust: document.getElementById('cust-name').value || "Cash Sale",
-            total: total,
-            method: document.getElementById('pay-method').value,
-            items: cart,
-            date: new Date().toLocaleDateString(),
-            timestamp: serverTimestamp()
-        };
-        await addDoc(collection(db, "sales"), saleData);
-        for(let c of cart) {
-            const it = inv.find(i => i.id === c.invId);
-            if(it) await updateDoc(doc(db, "inventory", c.invId), { qty: it.qty - c.qty });
-        }
-        window.print();
-        location.reload();
-    };
 
     window.tab = (id) => {
         document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
@@ -268,30 +322,94 @@
         document.getElementById('btn-'+id).classList.add('active');
     };
 
+    window.saveItem = async () => {
+        const name = document.getElementById('i-name').value;
+        const buy = parseFloat(document.getElementById('i-buy').value) || 0;
+        const qty = parseFloat(document.getElementById('i-qty').value) || 0;
+        const retail = parseFloat(document.getElementById('i-retail').value) || 0;
+        const wholesale = parseFloat(document.getElementById('i-wholesale').value) || 0;
+        if(!name) return;
+        await addDoc(collection(db, "inventory"), { name, buy, qty, retail, wholesale });
+        ['i-name', 'i-buy', 'i-qty', 'i-retail', 'i-wholesale'].forEach(id => document.getElementById(id).value = '');
+    };
+
+    window.addToCart = () => {
+        const itId = document.getElementById('selected-item-id').value;
+        const qty = parseFloat(document.getElementById('sale-qty').value);
+        const type = document.getElementById('rate-type').value;
+        const gstP = parseFloat(document.getElementById('sale-gst').value) || 0;
+        if(!itId || !qty) return alert("Select Item & Quantity");
+        const it = inv.find(i => i.id === itId);
+        if(!it) return;
+        const rate = (type === 'retail') ? it.retail : (it.wholesale || it.retail);
+        const baseTotal = rate * qty;
+        const gstAmt = (baseTotal * gstP) / 100;
+        const finalTotal = baseTotal + gstAmt;
+        cart.push({ name: it.name, qty, rate, base: baseTotal, gstA: gstAmt, gstP, total: finalTotal, invId: it.id });
+        updateCartUI();
+        document.getElementById('item-search').value = '';
+        document.getElementById('selected-item-id').value = '';
+        document.getElementById('stock-hint').innerText = '';
+        document.getElementById('sale-qty').value = '';
+    };
+
+    function updateCartUI() {
+        const b = document.getElementById('cart-body'); b.innerHTML = '';
+        let tax = 0, gst = 0, grand = 0;
+        cart.forEach((c, index) => {
+            tax += c.base; gst += c.gstA; grand += c.total;
+            b.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>₹${c.rate}</td><td>${c.gstP}%</td><td>₹${c.total.toFixed(2)}</td><td class="no-print"><button onclick="removeFromCart(${index})" class="btn-del">X</button></td></tr>`;
+        });
+        document.getElementById('tax-amt').innerText = tax.toFixed(2);
+        document.getElementById('gst-amt').innerText = gst.toFixed(2);
+        document.getElementById('cart-total').innerText = grand.toFixed(2);
+    }
+
+    window.removeFromCart = (index) => { cart.splice(index, 1); updateCartUI(); };
+
+    window.finishBill = async () => {
+        const total = parseFloat(document.getElementById('cart-total').innerText);
+        if(total <= 0) return;
+        const now = new Date();
+        const saleData = {
+            cust: document.getElementById('cust-name').value || "Cash Sale",
+            total: total,
+            method: document.getElementById('pay-method').value,
+            items: cart.map(c => ({ name: c.name, qty: c.qty, rate: c.rate, total: c.total, invId: c.invId, gstP: c.gstP })),
+            date: now.toLocaleDateString(),
+            time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp: serverTimestamp()
+        };
+        await addDoc(collection(db, "sales"), saleData);
+        for(let c of cart) {
+            const it = inv.find(i => i.id === c.invId);
+            if(it) await updateDoc(doc(db, "inventory", c.invId), { qty: it.qty - c.qty });
+        }
+        setTimeout(() => { window.print(); location.reload(); }, 500);
+    };
+
     function refreshUI() {
-        let sVal = 0, todaySale = 0;
+        let sVal = 0, todaySale = 0, cred = 0, cash = 0;
         const today = new Date().toLocaleDateString();
         const sBody = document.getElementById('stock-body'); sBody.innerHTML = '';
         inv.forEach(it => {
-            sVal += (it.buy * it.qty) || 0;
-            sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td><button class="btn-del" onclick="deleteDoc(doc(db,'inventory','${it.id}'))">X</button></td></tr>`;
+            sVal += (parseFloat(it.buy) * parseFloat(it.qty)) || 0;
+            sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td><button class="btn-del" onclick="deleteItem('${it.id}')">Del</button></td></tr>`;
         });
-        document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString();
         const rList = document.getElementById('recent-list'); rList.innerHTML = '';
         sales.forEach(s => {
-            if(s.date === today) todaySale += s.total;
-            rList.innerHTML += `<div class="card"><b>${s.cust}</b>: ₹${s.total} (${s.method})</div>`;
+            const amt = parseFloat(s.total) || 0;
+            if(s.date === today) todaySale += amt;
+            if(s.method === 'credit') cred += amt; else cash += amt;
+            rList.innerHTML += `<div class="card" style="padding:12px; margin-bottom:8px; border-left: 5px solid var(--accent);"><div style="display:flex; justify-content:space-between;"><span><b>${s.cust}</b> <small>(${s.method})</small><br><small>${s.date}</small></span><b style="color:var(--accent)">₹${amt.toFixed(0)}</b></div></div>`;
         });
-        document.getElementById('ds-sale').innerText = "₹ " + Math.round(todaySale).toLocaleString();
+        document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString('en-IN');
+        document.getElementById('ds-sale').innerText = "₹ " + Math.round(todaySale).toLocaleString('en-IN');
+        document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString('en-IN');
+        document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
     }
 
-    function updateChart() {
-        const ctx = document.getElementById('salesChart').getContext('2d');
-        const daily = {}; sales.forEach(s => daily[s.date] = (daily[s.date] || 0) + s.total);
-        const labels = Object.keys(daily).slice(-7);
-        if(salesChart) salesChart.destroy();
-        salesChart = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Sales', data: labels.map(l => daily[l]), borderColor: '#2563eb', fill: true }] } });
-    }
+    window.deleteItem = async (id) => { if(confirm("നീക്കം ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
 </script>
 </body>
 </html>
