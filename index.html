@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --primary: #1e293b; --accent: #2563eb; --bg: #f8fafc; --text: #334155; --success: #059669; --whatsapp: #25d366; }
+        :root { --primary: #1e293b; --accent: #2563eb; --bg: #f8fafc; --text: #334155; --success: #059669; --whatsapp: #25d366; --danger: #ef4444; }
         body { font-family: 'Manjari', sans-serif; background: var(--bg); margin: 0; padding-bottom: 60px; color: var(--text); }
         
         .header { background: var(--primary); color: white; padding: 25px 20px; display: flex; align-items: center; gap: 20px; border-radius: 0 0 25px 25px; }
@@ -16,8 +16,8 @@
         .shop-info h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
         .shop-info p { margin: 2px 0; font-size: 0.85rem; opacity: 0.9; }
 
-        .nav-bar { display: grid; grid-template-columns: repeat(4, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .nav-btn { border: none; background: none; padding: 15px 5px; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; }
+        .nav-bar { display: grid; grid-template-columns: repeat(5, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .nav-btn { border: none; background: none; padding: 15px 5px; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; font-size: 0.8rem; }
         .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); background: #f1f5f9; }
 
         .container { padding: 15px; max-width: 900px; margin: 0 auto; }
@@ -33,30 +33,21 @@
         .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 5px; }
         .btn-primary { background: var(--accent); color: white; }
         .btn-wa { background: var(--whatsapp); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
         .btn-del { background: #fee2e2; color: #ef4444; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-        .btn-edit { background: #e0f2fe; color: #0369a1; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-right: 5px; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
         th { background: #f1f5f9; padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0; }
         td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
 
-        .search-container { position: relative; width: 100%; }
-        .search-results { position: absolute; background: white; width: 100%; z-index: 10; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; display: none; }
+        .search-results { position: absolute; background: white; width: 100%; z-index: 10; border: 1px solid #ddd; border-radius: 8px; max-height: 200px; overflow-y: auto; display: none; }
         .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
-        .search-item:hover { background: #f1f5f9; }
-        .stock-indicator { color: var(--success); font-weight: bold; font-size: 0.85rem; margin-bottom: 5px; display: block; }
-
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; }
-
+        
         @media print { 
-            .no-print, .nav-bar, .btn-del, .btn-edit, .action-area, .btn, #loading, #bill-title, .search-container, .chart-container { 
-                display: none !important; 
-            } 
-            body { padding: 0; background: white; color: black; }
-            .header { background: transparent; color: black; padding: 10px 0; border-bottom: 1px solid #000; border-radius: 0; }
-            .container { width: 100%; padding: 0; margin: 0; } 
-            .card { box-shadow: none; border: none; padding: 10px; width: 100%; } 
-            th, td { border-bottom: 1px solid #ddd !important; }
+            .no-print { display: none !important; } 
+            body { background: white; }
+            .header { background: transparent; color: black; border-bottom: 1px solid #000; }
+            .card { box-shadow: none; border: none; }
         }
     </style>
 </head>
@@ -65,19 +56,17 @@
 <div id="loading"><b>Processing...</b></div>
 
 <div class="header">
-    <div class="logo-container">
-        <img src="logo.png" alt="Logo" onerror="this.outerHTML='IQRA'">
-    </div>
+    <div class="logo-container"><img src="logo.png" alt="Logo" onerror="this.outerHTML='IQRA'"></div>
     <div class="shop-info">
         <h1>IQRA MARKETING</h1>
-        <p>Karuvanpadi - 679303</p>
-        <p>Ph: 8089305300</p>
+        <p>Karuvanpadi - 679303 | Ph: 8089305300</p>
     </div>
 </div>
 
 <nav class="nav-bar no-print">
     <button class="nav-btn active" id="btn-home" onclick="tab('home')">Home</button>
     <button class="nav-btn" id="btn-bill" onclick="tab('bill')">Billing</button>
+    <button class="nav-btn" id="btn-return" onclick="tab('return')">Return</button>
     <button class="nav-btn" id="btn-items" onclick="tab('items')">Stock</button>
     <button class="nav-btn" id="btn-report" onclick="tab('report')">Credit</button>
 </nav>
@@ -90,41 +79,26 @@
             <div class="stat-box red"><h6>Total Credit</h6><h3 id="ds-cred">₹ 0</h3></div>
             <div class="stat-box purple"><h6>Cash/G-Pay</h6><h3 id="ds-cash">₹ 0</h3></div>
         </div>
-
         <div class="card no-print">
-            <h4 style="margin-top: 0;">Sales Analysis</h4>
-            <div class="chart-container">
-                <canvas id="salesChart"></canvas>
-            </div>
+            <h4>Sales Analysis</h4>
+            <div class="chart-container"><canvas id="salesChart"></canvas></div>
         </div>
-
-        <h4 style="margin: 20px 0 10px;">Recent Transactions</h4>
+        <h4>Recent Transactions</h4>
         <div id="recent-list"></div>
     </div>
 
     <div id="sec-bill" style="display:none">
         <div class="card no-print">
-            <h3 id="bill-title">New Invoice</h3>
-            <input type="hidden" id="edit-bill-id">
-            
-            <div class="search-container">
-                <input type="text" id="cust-name" placeholder="Customer Name" oninput="filterCustomers()">
-                <div id="cust-results" class="search-results"></div>
-            </div>
-            <input type="number" id="cust-phone" placeholder="WhatsApp Number (91 ഇല്ലെങ്കിലും കുഴപ്പമില്ല)">
-            
-            <div class="search-container">
-                <input type="text" id="item-search" placeholder="Search Item..." oninput="filterItems()">
-                <div id="search-results" class="search-results"></div>
-                <input type="hidden" id="selected-item-id">
-                <span id="stock-hint" class="stock-indicator"></span>
-            </div>
-
+            <h3>New Invoice</h3>
+            <input type="text" id="cust-name" placeholder="Customer Name" oninput="filterCustomers()">
+            <div id="cust-results" class="search-results"></div>
+            <input type="number" id="cust-phone" placeholder="WhatsApp Number">
+            <input type="text" id="item-search" placeholder="Search Item..." oninput="filterItems()">
+            <div id="search-results" class="search-results"></div>
+            <input type="hidden" id="selected-item-id">
+            <span id="stock-hint" style="font-size:0.8rem; color:green"></span>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <select id="rate-type">
-                    <option value="retail">Retail Rate</option>
-                    <option value="wholesale">Wholesale</option>
-                </select>
+                <select id="rate-type"><option value="retail">Retail</option><option value="wholesale">Wholesale</option></select>
                 <input type="number" id="sale-qty" placeholder="Quantity">
             </div>
             <input type="number" id="sale-gst" placeholder="GST %" value="0">
@@ -132,22 +106,26 @@
         </div>
         <div class="card">
             <table id="cart-table">
-                <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>GST</th><th>Total</th><th class="no-print">Action</th></tr></thead>
+                <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th><th class="no-print">X</th></tr></thead>
                 <tbody id="cart-body"></tbody>
             </table>
-            <div style="text-align: right; margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px;">
-                <div class="summary-item">Taxable Amt: ₹ <span id="tax-amt">0.00</span></div>
-                <div class="summary-item">GST Amt: ₹ <span id="gst-amt">0.00</span></div>
-                <h2 style="color: var(--accent); margin: 5px 0;">Grand Total: ₹ <span id="cart-total">0.00</span></h2>
+            <div style="text-align: right; margin-top: 15px;">
+                <h2>Total: ₹ <span id="cart-total">0.00</span></h2>
             </div>
             <select id="pay-method" class="no-print">
-                <option value="cash">Cash</option>
-                <option value="gpay">G-Pay</option>
-                <option value="credit">Credit (കടം)</option>
+                <option value="cash">Cash</option><option value="gpay">G-Pay</option><option value="credit">Credit</option>
             </select>
-            <button class="btn btn-primary" style="background:var(--success)" onclick="finishBill()">Save & Print Bill</button>
+            <button class="btn btn-primary" style="background:var(--success)" onclick="finishBill()">Save & Print</button>
             <button class="btn btn-wa no-print" onclick="sendWhatsApp()">Share via WhatsApp</button>
-            <button class="btn no-print" style="background:#64748b;" onclick="location.reload()">Cancel / New Bill</button>
+        </div>
+    </div>
+
+    <div id="sec-return" style="display:none">
+        <div class="card">
+            <h3>Sales Return (വിൽപ്പന തിരിച്ചെടുക്കൽ)</h3>
+            <input type="text" id="ret-bill-id" placeholder="Enter Sales ID / Customer Name">
+            <button class="btn btn-primary" onclick="searchReturnBill()">Find Bill</button>
+            <div id="return-bill-details" style="margin-top:20px;"></div>
         </div>
     </div>
 
@@ -157,31 +135,29 @@
             <input type="text" id="i-name" placeholder="Item Name">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <input type="number" id="i-buy" placeholder="Purchase Rate">
-                <input type="number" id="i-qty" placeholder="Current Stock">
-            </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <input type="number" id="i-qty" placeholder="Stock Qty">
                 <input type="number" id="i-retail" placeholder="Retail Rate">
                 <input type="number" id="i-wholesale" placeholder="Wholesale Rate">
             </div>
             <button class="btn btn-primary" onclick="saveItem()">Save Product</button>
         </div>
         <div class="card">
-            <table>
-                <thead><tr><th>Item</th><th>Stock</th><th>Retail</th><th>Action</th></tr></thead>
+            <table id="stock-table">
+                <thead><tr><th>Item</th><th>Stock</th><th>Rate</th><th>Action</th></tr></thead>
                 <tbody id="stock-body"></tbody>
             </table>
         </div>
     </div>
 
     <div id="sec-report" style="display:none">
-        <h3>Credit Ledger (കടം വിവരങ്ങൾ)</h3>
+        <h3>Credit Ledger</h3>
         <div id="credit-list"></div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDmviHo3-oZChgxScf4RTfQ9d8nMNxSgGI",
@@ -196,7 +172,6 @@
     const db = getFirestore(app);
 
     let inv = [], sales = [], cart = [], salesChart = null;
-    const ADMIN_PW = "305300";
 
     onSnapshot(collection(db, "inventory"), (s) => {
         inv = s.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -210,88 +185,15 @@
         updateChart();
     });
 
-    // --- WhatsApp Share Logic ---
-    window.sendWhatsApp = () => {
-        let phone = document.getElementById('cust-phone').value;
-        const custName = document.getElementById('cust-name').value || "Customer";
-        const total = document.getElementById('cart-total').innerText;
-        
-        if (!phone) return alert("വാട്സാപ്പ് നമ്പർ നൽകുക!");
-        if (cart.length === 0) return alert("ബില്ലിൽ ഐറ്റങ്ങൾ ഒന്നുമില്ല!");
-        
-        // Ensure 91 prefix
-        if (phone.length === 10) phone = "91" + phone;
-
-        let message = `*IQRA MARKETING - BILLING*\n`;
-        message += `--------------------------\n`;
-        message += `Customer: ${custName}\n`;
-        message += `Date: ${new Date().toLocaleDateString()}\n\n`;
-        message += `*Items:*\n`;
-        
-        cart.forEach(item => {
-            message += `▪ ${item.name}\n  ${item.qty} x ${item.rate} = ₹${item.total.toFixed(2)}\n`;
-        });
-        
-        message += `\n--------------------------\n`;
-        message += `*Grand Total: ₹${total}*\n`;
-        message += `--------------------------\n`;
-        message += `_Thank you for shopping!_`;
-
-        const encodedMsg = encodeURIComponent(message);
-        window.open(`https://wa.me/${phone}?text=${encodedMsg}`, '_blank');
+    // --- NAVIGATION ---
+    window.tab = (id) => {
+        document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('sec-'+id).style.display = 'block';
+        document.getElementById('btn-'+id).classList.add('active');
     };
 
-    // Chart Initialization
-    function updateChart() {
-        const ctx = document.getElementById('salesChart').getContext('2d');
-        const dailyTotals = {};
-        sales.forEach(s => {
-            const date = s.date;
-            dailyTotals[date] = (dailyTotals[date] || 0) + (parseFloat(s.total) || 0);
-        });
-        const labels = Object.keys(dailyTotals).slice(0, 7).reverse();
-        const data = labels.map(l => dailyTotals[l]);
-        if (salesChart) salesChart.destroy();
-        salesChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Daily Sales (₹)',
-                    data: data,
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
-            }
-        });
-    }
-
-    window.filterCustomers = () => {
-        const txt = document.getElementById('cust-name').value.toLowerCase();
-        const resDiv = document.getElementById('cust-results');
-        if(!txt) { resDiv.style.display = 'none'; return; }
-        const uniqueCusts = [...new Set(sales.map(s => s.cust))];
-        const filtered = uniqueCusts.filter(c => c.toLowerCase().includes(txt));
-        resDiv.innerHTML = '';
-        filtered.forEach(name => {
-            const div = document.createElement('div');
-            div.className = 'search-item';
-            div.innerText = name;
-            div.onclick = () => { document.getElementById('cust-name').value = name; resDiv.style.display = 'none'; };
-            resDiv.appendChild(div);
-        });
-        resDiv.style.display = filtered.length > 0 ? 'block' : 'none';
-    };
-
+    // --- BILLING LOGIC ---
     window.filterItems = () => {
         const txt = document.getElementById('item-search').value.toLowerCase();
         const resDiv = document.getElementById('search-results');
@@ -301,115 +203,162 @@
         filtered.forEach(it => {
             const div = document.createElement('div');
             div.className = 'search-item';
-            div.innerHTML = `${it.name} <span style="float:right; color:#888;">Stock: ${it.qty}</span>`;
-            div.onclick = () => selectItem(it);
+            div.innerHTML = `${it.name} (Stock: ${it.qty})`;
+            div.onclick = () => {
+                document.getElementById('item-search').value = it.name;
+                document.getElementById('selected-item-id').value = it.id;
+                document.getElementById('stock-hint').innerText = "Available: " + it.qty;
+                resDiv.style.display = 'none';
+            };
             resDiv.appendChild(div);
         });
         resDiv.style.display = filtered.length > 0 ? 'block' : 'none';
     };
 
-    function selectItem(it) {
-        document.getElementById('item-search').value = it.name;
-        document.getElementById('selected-item-id').value = it.id;
-        document.getElementById('search-results').style.display = 'none';
-        document.getElementById('stock-hint').innerText = `Current Stock: ${it.qty}`;
-    }
-
-    window.tab = (id) => {
-        document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('sec-'+id).style.display = 'block';
-        document.getElementById('btn-'+id).classList.add('active');
-    };
-
-    window.saveItem = async () => {
-        const name = document.getElementById('i-name').value;
-        const buy = parseFloat(document.getElementById('i-buy').value) || 0;
-        const qty = parseFloat(document.getElementById('i-qty').value) || 0;
-        const retail = parseFloat(document.getElementById('i-retail').value) || 0;
-        const wholesale = parseFloat(document.getElementById('i-wholesale').value) || 0;
-        if(!name) return;
-        await addDoc(collection(db, "inventory"), { name, buy, qty, retail, wholesale });
-        ['i-name', 'i-buy', 'i-qty', 'i-retail', 'i-wholesale'].forEach(id => document.getElementById(id).value = '');
-    };
-
     window.addToCart = () => {
-        const itId = document.getElementById('selected-item-id').value;
+        const id = document.getElementById('selected-item-id').value;
         const qty = parseFloat(document.getElementById('sale-qty').value);
-        const type = document.getElementById('rate-type').value;
-        const gstP = parseFloat(document.getElementById('sale-gst').value) || 0;
-        if(!itId || !qty) return alert("Select Item & Quantity");
-        const it = inv.find(i => i.id === itId);
-        if(!it) return;
-        const rate = (type === 'retail') ? it.retail : (it.wholesale || it.retail);
-        const baseTotal = rate * qty;
-        const gstAmt = (baseTotal * gstP) / 100;
-        const finalTotal = baseTotal + gstAmt;
-        cart.push({ name: it.name, qty, rate, base: baseTotal, gstA: gstAmt, gstP, total: finalTotal, invId: it.id });
+        if(!id || !qty) return alert("Select Item & Quantity");
+        const it = inv.find(i => i.id === id);
+        const rate = document.getElementById('rate-type').value === 'retail' ? it.retail : it.wholesale;
+        cart.push({ invId: id, name: it.name, qty, rate, total: qty * rate });
         updateCartUI();
         document.getElementById('item-search').value = '';
-        document.getElementById('selected-item-id').value = '';
-        document.getElementById('stock-hint').innerText = '';
         document.getElementById('sale-qty').value = '';
     };
 
     function updateCartUI() {
-        const b = document.getElementById('cart-body'); b.innerHTML = '';
-        let tax = 0, gst = 0, grand = 0;
-        cart.forEach((c, index) => {
-            tax += c.base; gst += c.gstA; grand += c.total;
-            b.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>₹${c.rate}</td><td>${c.gstP}%</td><td>₹${c.total.toFixed(2)}</td><td class="no-print"><button onclick="removeFromCart(${index})" class="btn-del">X</button></td></tr>`;
+        const body = document.getElementById('cart-body');
+        body.innerHTML = '';
+        let total = 0;
+        cart.forEach((c, i) => {
+            total += c.total;
+            body.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.rate}</td><td>${c.total}</td><td class="no-print"><button class="btn-del" onclick="removeFromCart(${i})">X</button></td></tr>`;
         });
-        document.getElementById('tax-amt').innerText = tax.toFixed(2);
-        document.getElementById('gst-amt').innerText = gst.toFixed(2);
-        document.getElementById('cart-total').innerText = grand.toFixed(2);
+        document.getElementById('cart-total').innerText = total.toFixed(2);
     }
 
-    window.removeFromCart = (index) => { cart.splice(index, 1); updateCartUI(); };
+    window.removeFromCart = (i) => { cart.splice(i, 1); updateCartUI(); };
 
     window.finishBill = async () => {
         const total = parseFloat(document.getElementById('cart-total').innerText);
         if(total <= 0) return;
-        const now = new Date();
         const saleData = {
             cust: document.getElementById('cust-name').value || "Cash Sale",
+            phone: document.getElementById('cust-phone').value || "",
             total: total,
             method: document.getElementById('pay-method').value,
-            items: cart.map(c => ({ name: c.name, qty: c.qty, rate: c.rate, total: c.total, invId: c.invId, gstP: c.gstP })),
-            date: now.toLocaleDateString(),
-            time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            items: cart,
+            date: new Date().toLocaleDateString(),
             timestamp: serverTimestamp()
         };
         await addDoc(collection(db, "sales"), saleData);
-        for(let c of cart) {
-            const it = inv.find(i => i.id === c.invId);
-            if(it) await updateDoc(doc(db, "inventory", c.invId), { qty: it.qty - c.qty });
+        for(let item of cart) {
+            const it = inv.find(i => i.id === item.invId);
+            await updateDoc(doc(db, "inventory", item.invId), { qty: it.qty - item.qty });
         }
-        setTimeout(() => { window.print(); location.reload(); }, 500);
+        alert("Bill Saved!");
+        window.print();
+        location.reload();
+    };
+
+    // --- SALES RETURN LOGIC ---
+    window.searchReturnBill = () => {
+        const searchTxt = document.getElementById('ret-bill-id').value.toLowerCase();
+        const bill = sales.find(s => s.id.includes(searchTxt) || s.cust.toLowerCase().includes(searchTxt));
+        const container = document.getElementById('return-bill-details');
+        
+        if(!bill) { container.innerHTML = "Bill not found!"; return; }
+
+        let html = `<h4>Customer: ${bill.cust} | Date: ${bill.date}</h4><table>`;
+        bill.items.forEach((item, idx) => {
+            html += `<tr><td>${item.name} (${item.qty})</td><td><button class="btn-del" style="background:orange; color:white;" onclick="returnItem('${bill.id}', ${idx})">Return This</button></td></tr>`;
+        });
+        html += `</table>`;
+        container.innerHTML = html;
+    };
+
+    window.returnItem = async (saleId, itemIndex) => {
+        if(!confirm("ഈ ഐറ്റം സ്റ്റോക്കിലേക്ക് തിരിച്ചെടുക്കണോ?")) return;
+        
+        const saleRef = doc(db, "sales", saleId);
+        const sale = sales.find(s => s.id === saleId);
+        const item = sale.items[itemIndex];
+
+        // 1. Update Stock
+        const itInInv = inv.find(i => i.id === item.invId);
+        if(itInInv) {
+            await updateDoc(doc(db, "inventory", item.invId), { qty: itInInv.qty + item.qty });
+        }
+
+        // 2. Update Sales Record
+        let updatedItems = [...sale.items];
+        updatedItems.splice(itemIndex, 1);
+        const newTotal = sale.total - item.total;
+
+        if(updatedItems.length === 0) {
+            await deleteDoc(saleRef);
+            alert("മുഴുവൻ ഐറ്റങ്ങളും റിട്ടേൺ ചെയ്തു. ബില്ല് ഡിലീറ്റ് ആയി.");
+        } else {
+            await updateDoc(saleRef, { items: updatedItems, total: newTotal });
+            alert("ഐറ്റം റിട്ടേൺ ചെയ്തു. ബില്ല് അപ്‌ഡേറ്റ് ആയി.");
+        }
+        document.getElementById('return-bill-details').innerHTML = '';
+    };
+
+    // --- STOCK & UI HELPERS ---
+    window.saveItem = async () => {
+        const data = {
+            name: document.getElementById('i-name').value,
+            buy: parseFloat(document.getElementById('i-buy').value) || 0,
+            qty: parseFloat(document.getElementById('i-qty').value) || 0,
+            retail: parseFloat(document.getElementById('i-retail').value) || 0,
+            wholesale: parseFloat(document.getElementById('i-wholesale').value) || 0
+        };
+        await addDoc(collection(db, "inventory"), data);
+        alert("Product Added");
+    };
+
+    window.sendWhatsApp = () => {
+        let phone = document.getElementById('cust-phone').value;
+        if(!phone) return alert("Phone number required");
+        let msg = `*IQRA MARKETING*\nTotal: ₹${document.getElementById('cart-total').innerText}\nItems:\n`;
+        cart.forEach(i => msg += `- ${i.name}: ${i.qty} x ${i.rate}\n`);
+        window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`);
     };
 
     function refreshUI() {
         let sVal = 0, todaySale = 0, cred = 0, cash = 0;
         const today = new Date().toLocaleDateString();
+
         const sBody = document.getElementById('stock-body'); sBody.innerHTML = '';
         inv.forEach(it => {
-            sVal += (parseFloat(it.buy) * parseFloat(it.qty)) || 0;
-            sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td><button class="btn-del" onclick="deleteItem('${it.id}')">Del</button></td></tr>`;
+            sVal += it.buy * it.qty;
+            sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td><button onclick="deleteItem('${it.id}')" class="btn-del">Del</button></td></tr>`;
         });
+
         const rList = document.getElementById('recent-list'); rList.innerHTML = '';
         sales.forEach(s => {
-            const amt = parseFloat(s.total) || 0;
-            if(s.date === today) todaySale += amt;
-            if(s.method === 'credit') cred += amt; else cash += amt;
-            rList.innerHTML += `<div class="card" style="padding:12px; margin-bottom:8px; border-left: 5px solid var(--accent);"><div style="display:flex; justify-content:space-between;"><span><b>${s.cust}</b> <small>(${s.method})</small><br><small>${s.date}</small></span><b style="color:var(--accent)">₹${amt.toFixed(0)}</b></div></div>`;
+            if(s.date === today) todaySale += s.total;
+            if(s.method === 'credit') cred += s.total; else cash += s.total;
+            rList.innerHTML += `<div class="card" style="padding:10px; border-left:4px solid blue;"><b>${s.cust}</b>: ₹${s.total} <br><small>ID: ${s.id}</small></div>`;
         });
-        document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString('en-IN');
-        document.getElementById('ds-sale').innerText = "₹ " + Math.round(todaySale).toLocaleString('en-IN');
-        document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString('en-IN');
-        document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
+
+        document.getElementById('ds-stock').innerText = "₹ " + sVal.toLocaleString();
+        document.getElementById('ds-sale').innerText = "₹ " + todaySale.toLocaleString();
+        document.getElementById('ds-cred').innerText = "₹ " + cred.toLocaleString();
+        document.getElementById('ds-cash').innerText = "₹ " + cash.toLocaleString();
     }
 
-    window.deleteItem = async (id) => { if(confirm("നീക്കം ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
+    window.deleteItem = async (id) => { if(confirm("Delete product?")) await deleteDoc(doc(db, "inventory", id)); };
+
+    function updateChart() {
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        if(salesChart) salesChart.destroy();
+        const data = sales.slice(0,7).map(s => s.total);
+        const labels = sales.slice(0,7).map(s => s.date);
+        salesChart = new Chart(ctx, { type:'line', data:{labels, datasets:[{label:'Sales', data, borderColor:'blue', fill:true}]} });
+    }
 </script>
 </body>
 </html>
