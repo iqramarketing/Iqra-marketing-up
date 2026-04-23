@@ -86,7 +86,11 @@
         <div class="card no-print">
             <h3 id="bill-title">New Invoice</h3>
             <input type="hidden" id="edit-bill-id">
-            <input type="text" id="cust-name" placeholder="Customer Name">
+            
+            <div class="search-container no-print">
+                <input type="text" id="cust-name" placeholder="Customer Name" oninput="filterCustomers()">
+                <div id="cust-results" class="search-results"></div>
+            </div>
             
             <div class="search-container">
                 <input type="text" id="item-search" placeholder="Search Item..." oninput="filterItems()">
@@ -180,6 +184,33 @@
         sales = s.docs.map(d => ({ id: d.id, ...d.data() }));
         refreshUI();
     });
+
+    // 1. കസ്റ്റമർമാരെ ഫിൽട്ടർ ചെയ്യാൻ
+    window.filterCustomers = () => {
+        const txt = document.getElementById('cust-name').value.toLowerCase();
+        const resDiv = document.getElementById('cust-results');
+        if(!txt) { resDiv.style.display = 'none'; return; }
+
+        const uniqueCusts = [...new Set(sales.map(s => s.cust))];
+        const filtered = uniqueCusts.filter(c => c.toLowerCase().includes(txt));
+
+        resDiv.innerHTML = '';
+        if(filtered.length > 0) {
+            resDiv.style.display = 'block';
+            filtered.forEach(name => {
+                const div = document.createElement('div');
+                div.className = 'search-item';
+                div.innerText = name;
+                div.onclick = () => {
+                    document.getElementById('cust-name').value = name;
+                    resDiv.style.display = 'none';
+                };
+                resDiv.appendChild(div);
+            });
+        } else {
+            resDiv.style.display = 'none';
+        }
+    };
 
     window.filterItems = () => {
         const txt = document.getElementById('item-search').value.toLowerCase();
@@ -343,9 +374,10 @@
             sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td><button class="btn-del" onclick="deleteItem('${it.id}')">Del</button></td></tr>`;
         });
 
-        // Transactions & Ledger Logic
         const rList = document.getElementById('recent-list'); 
         rList.innerHTML = '';
+        
+        // 2. ഒരേ കസ്റ്റമറെ ഗ്രൂപ്പ് ചെയ്യാൻ CredMap ഉപയോഗിക്കുന്നു
         const credMap = {};
 
         sales.forEach(s => {
@@ -353,6 +385,7 @@
 
             if(s.method === 'credit') { 
                 cred += s.total; 
+                // ഇവിടെ പഴയ ബാലൻസും പുതിയതും കൂട്ടി വെക്കുന്നു
                 credMap[s.cust] = (credMap[s.cust] || 0) + s.total; 
             } else {
                 cash += s.total;
@@ -374,10 +407,15 @@
                 </div>`;
         });
 
+        // 3. ക്രെഡിറ്റ് ലിസ്റ്റ് (റിപ്പോർട്ട്) അപ്‌ഡേറ്റ് ചെയ്യുന്നു
         const cList = document.getElementById('credit-list'); 
         cList.innerHTML = '';
         for(let n in credMap) { 
-            cList.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; padding:12px;"><b>${n}</b><b style="color:red">₹${credMap[n].toFixed(0)}</b></div>`; 
+            cList.innerHTML += `
+                <div class="card" style="display:flex; justify-content:space-between; padding:15px; border-left: 5px solid red;">
+                    <b>${n}</b>
+                    <b style="color:red">Total Due: ₹${credMap[n].toFixed(0)}</b>
+                </div>`; 
         }
 
         document.getElementById('ds-stock').innerText = "₹ " + sVal.toLocaleString('en-IN');
@@ -391,6 +429,8 @@
     document.addEventListener('click', (e) => {
         if(!e.target.closest('.search-container')) {
             document.getElementById('search-results').style.display = 'none';
+            const cRes = document.getElementById('cust-results');
+            if(cRes) cRes.style.display = 'none';
         }
     });
 </script>
