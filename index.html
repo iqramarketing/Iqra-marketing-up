@@ -42,15 +42,17 @@
         .search-item:hover { background: #f1f5f9; }
         .stock-indicator { color: var(--success); font-weight: bold; font-size: 0.85rem; margin-bottom: 5px; display: block; }
 
-        .bill-item-list { margin: 5px 0; padding-left: 15px; font-size: 0.8rem; color: #555; list-style: circle; }
         #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; }
 
-        /* പുതിയ പ്രിന്റ് സെറ്റിംഗ്സ് */
+        /* PRINT SETTINGS */
         @media print { 
-            .no-print, .nav-bar, .btn-del, .btn-edit, .action-area, .header, .btn, #loading, #bill-title, .search-container { 
+            /* ഇവിടെ .header ഒഴിവാക്കി, അപ്പോൾ കടയുടെ പേര് വരും */
+            .no-print, .nav-bar, .btn-del, .btn-edit, .action-area, .btn, #loading, #bill-title, .search-container { 
                 display: none !important; 
             } 
-            body { padding: 0; background: white; }
+            body { padding: 0; background: white; color: black; }
+            .header { background: transparent; color: black; padding: 10px 0; border-bottom: 1px solid #000; border-radius: 0; }
+            .logo-container { border: 1px solid #ddd; }
             .container { width: 100%; padding: 0; margin: 0; } 
             .card { box-shadow: none; border: none; padding: 10px; width: 100%; } 
             th, td { border-bottom: 1px solid #ddd !important; }
@@ -96,7 +98,7 @@
             <h3 id="bill-title">New Invoice</h3>
             <input type="hidden" id="edit-bill-id">
             
-            <div class="search-container no-print">
+            <div class="search-container">
                 <input type="text" id="cust-name" placeholder="Customer Name" oninput="filterCustomers()">
                 <div id="cust-results" class="search-results"></div>
             </div>
@@ -167,7 +169,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDmviHo3-oZChgxScf4RTfQ9d8nMNxSgGI",
@@ -298,13 +300,14 @@
         const total = parseFloat(document.getElementById('cart-total').innerText);
         if(total <= 0) return;
 
-        // ബില്ലിന്റെ താഴെ താങ്ക് യൂ മെസ്സേജ് ചേർക്കുന്നു
+        // വിസിറ്റ് എഗൈൻ മെസ്സേജ് ചേർക്കുന്നു
         const cartBody = document.getElementById('cart-body');
         const thankYouRow = `
-            <tr class="only-print">
-                <td colspan="5" style="text-align:center; padding-top:20px;">
-                    <hr>
-                    <p><b>Thank you for visiting again!</b></p>
+            <tr>
+                <td colspan="5" style="text-align:center; padding-top:20px; border:none !important;">
+                    <p style="font-size: 1rem; border-top: 1px dashed #000; padding-top:10px; margin-top:10px;">
+                        <b>Thank you for visiting again!</b>
+                    </p>
                 </td>
             </tr>`;
         cartBody.insertAdjacentHTML('beforeend', thankYouRow);
@@ -318,7 +321,7 @@
             items: cart.map(c => ({ name: c.name, qty: c.qty, rate: c.rate, total: c.total, invId: c.invId, gstP: c.gstP })),
             date: now.toLocaleDateString(),
             time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            timestamp: now
+            timestamp: serverTimestamp()
         };
 
         if(editId) { await deleteSale(editId, false); }
@@ -332,7 +335,7 @@
         setTimeout(() => {
             window.print();
             location.reload();
-        }, 100);
+        }, 500);
     };
 
     window.editBill = (id) => {
