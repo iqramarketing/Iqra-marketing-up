@@ -45,7 +45,16 @@
         .bill-item-list { margin: 5px 0; padding-left: 15px; font-size: 0.8rem; color: #555; list-style: circle; }
         #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; }
 
-        @media print { .no-print, .nav-bar, .btn-del, .btn-edit, .action-area { display: none !important; } .container { width: 100%; padding: 0; } .card { box-shadow: none; border: none; } }
+        /* പുതിയ പ്രിന്റ് സെറ്റിംഗ്സ് */
+        @media print { 
+            .no-print, .nav-bar, .btn-del, .btn-edit, .action-area, .header, .btn, #loading, #bill-title, .search-container { 
+                display: none !important; 
+            } 
+            body { padding: 0; background: white; }
+            .container { width: 100%; padding: 0; margin: 0; } 
+            .card { box-shadow: none; border: none; padding: 10px; width: 100%; } 
+            th, td { border-bottom: 1px solid #ddd !important; }
+        }
     </style>
 </head>
 <body>
@@ -288,7 +297,18 @@
     window.finishBill = async () => {
         const total = parseFloat(document.getElementById('cart-total').innerText);
         if(total <= 0) return;
-        document.getElementById('loading').style.display = 'flex';
+
+        // ബില്ലിന്റെ താഴെ താങ്ക് യൂ മെസ്സേജ് ചേർക്കുന്നു
+        const cartBody = document.getElementById('cart-body');
+        const thankYouRow = `
+            <tr class="only-print">
+                <td colspan="5" style="text-align:center; padding-top:20px;">
+                    <hr>
+                    <p><b>Thank you for visiting again!</b></p>
+                </td>
+            </tr>`;
+        cartBody.insertAdjacentHTML('beforeend', thankYouRow);
+
         const editId = document.getElementById('edit-bill-id').value;
         const now = new Date();
         const saleData = {
@@ -300,14 +320,19 @@
             time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             timestamp: now
         };
+
         if(editId) { await deleteSale(editId, false); }
         await addDoc(collection(db, "sales"), saleData);
+        
         for(let c of cart) {
             const it = inv.find(i => i.id === c.invId);
             if(it) await updateDoc(doc(db, "inventory", c.invId), { qty: it.qty - c.qty });
         }
-        window.print();
-        location.reload();
+
+        setTimeout(() => {
+            window.print();
+            location.reload();
+        }, 100);
     };
 
     window.editBill = (id) => {
@@ -376,11 +401,7 @@
 
         sales.forEach(s => {
             const amt = parseFloat(s.total) || 0;
-            
-            // തീയതി പരിശോധന (Today Sale കണക്കാക്കാൻ)
-            if(s.date === today) {
-                todaySale += amt;
-            }
+            if(s.date === today) todaySale += amt;
 
             if(s.method === 'credit') { 
                 cred += amt; 
