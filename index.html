@@ -36,6 +36,13 @@
         th { background: #f1f5f9; padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0; }
         td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
 
+        /* Search Box Styles */
+        .search-container { position: relative; width: 100%; }
+        .search-results { position: absolute; background: white; width: 100%; z-index: 10; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; display: none; }
+        .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+        .search-item:hover { background: #f1f5f9; }
+        .stock-indicator { color: var(--success); font-weight: bold; font-size: 0.85rem; margin-bottom: 5px; display: block; }
+
         .bill-item-list { margin: 5px 0; padding-left: 15px; font-size: 0.8rem; color: #555; list-style: circle; }
         #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; }
 
@@ -81,7 +88,14 @@
             <h3 id="bill-title">New Invoice</h3>
             <input type="hidden" id="edit-bill-id">
             <input type="text" id="cust-name" placeholder="Customer Name">
-            <select id="item-pick"><option value="">Select Item</option></select>
+            
+            <div class="search-container">
+                <input type="text" id="item-search" placeholder="Search Item..." oninput="filterItems()">
+                <div id="search-results" class="search-results"></div>
+                <input type="hidden" id="selected-item-id">
+                <span id="stock-hint" class="stock-indicator"></span>
+            </div>
+
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <select id="rate-type">
                     <option value="retail">Retail Rate</option>
@@ -158,7 +172,6 @@
     let inv = [], sales = [], cart = [];
     const ADMIN_PW = "305300";
 
-    // Data Sync
     onSnapshot(collection(db, "inventory"), (s) => {
         inv = s.docs.map(d => ({ id: d.id, ...d.data() }));
         refreshUI();
@@ -168,6 +181,35 @@
         sales = s.docs.map(d => ({ id: d.id, ...d.data() }));
         refreshUI();
     });
+
+    // SEARCH LOGIC
+    window.filterItems = () => {
+        const txt = document.getElementById('item-search').value.toLowerCase();
+        const resDiv = document.getElementById('search-results');
+        if(!txt) { resDiv.style.display = 'none'; return; }
+
+        const filtered = inv.filter(i => i.name.toLowerCase().includes(txt));
+        resDiv.innerHTML = '';
+        if(filtered.length > 0) {
+            resDiv.style.display = 'block';
+            filtered.forEach(it => {
+                const div = document.createElement('div');
+                div.className = 'search-item';
+                div.innerHTML = `${it.name} <span style="float:right; color:#888;">Stock: ${it.qty}</span>`;
+                div.onclick = () => selectItem(it);
+                resDiv.appendChild(div);
+            });
+        } else {
+            resDiv.style.display = 'none';
+        }
+    };
+
+    function selectItem(it) {
+        document.getElementById('item-search').value = it.name;
+        document.getElementById('selected-item-id').value = it.id;
+        document.getElementById('search-results').style.display = 'none';
+        document.getElementById('stock-hint').innerText = `Current Stock: ${it.qty}`;
+    }
 
     window.tab = (id) => {
         document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
@@ -188,13 +230,16 @@
     };
 
     window.addToCart = () => {
-        const idx = document.getElementById('item-pick').value;
+        const itId = document.getElementById('selected-item-id').value;
         const qty = parseFloat(document.getElementById('sale-qty').value);
         const type = document.getElementById('rate-type').value;
         const gstP = parseFloat(document.getElementById('sale-gst').value) || 0;
-        if(idx==="" || !qty) return;
         
-        const it = inv[idx];
+        if(!itId || !qty) return alert("Select Item & Quantity");
+        
+        const it = inv.find(i => i.id === itId);
+        if(!it) return;
+
         const rate = (type === 'retail') ? it.retail : (it.wholesale || it.retail);
         const baseTotal = rate * qty;
         const gstAmt = (baseTotal * gstP) / 100;
@@ -202,6 +247,12 @@
 
         cart.push({ name: it.name, qty, rate, base: baseTotal, gstA: gstAmt, gstP, total: finalTotal, invId: it.id });
         updateCartUI();
+        
+        // Reset Search
+        document.getElementById('item-search').value = '';
+        document.getElementById('selected-item-id').value = '';
+        document.getElementById('stock-hint').innerText = '';
+        document.getElementById('sale-qty').value = '';
     };
 
     function updateCartUI() {
@@ -238,9 +289,7 @@
             timestamp: now
         };
 
-        if(editId) {
-            await deleteSale(editId, false); // Internal call, no PW prompt
-        }
+        if(editId) { await deleteSale(editId, false); }
 
         await addDoc(collection(db, "sales"), saleData);
         for(let c of cart) {
@@ -273,7 +322,6 @@
     window.reprintBill = (id) => {
         const s = sales.find(x => x.id === id);
         if(!s) return;
-        
         tab('bill');
         document.getElementById('cust-name').value = s.cust;
         document.getElementById('pay-method').value = s.method;
@@ -289,7 +337,7 @@
         if(withPrompt) {
             const pw = prompt("ബില്ല് ഡിലീറ്റ് ചെയ്യാൻ പാസ്‌വേഡ് നൽകുക:");
             if (pw !== ADMIN_PW) return alert("തെറ്റായ പാസ്‌വേഡ്!");
-            if(!confirm("ഈ ബില്ല് ഡിലീറ്റ് ചെയ്യണോ? സ്റ്റോക്ക് തിരികെ കയറുന്നതാണ്.")) return;
+            if(!confirm("ഈ ബില്ല് ഡിലീറ്റ് ചെയ്യണോ?")) return;
         }
 
         const sDoc = await getDoc(doc(db, "sales", id));
@@ -309,11 +357,9 @@
         let sVal = 0, todaySale = 0, cred = 0, cash = 0;
         const today = new Date().toLocaleDateString();
 
-        const sel = document.getElementById('item-pick'); sel.innerHTML = '<option value="">Select Item</option>';
         const sBody = document.getElementById('stock-body'); sBody.innerHTML = '';
-        inv.forEach((it, i) => {
+        inv.forEach((it) => {
             sVal += (it.buy * it.qty);
-            sel.innerHTML += `<option value="${i}">${it.name} (${it.qty})</option>`;
             sBody.innerHTML += `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.retail}</td><td><button class="btn-del" onclick="deleteItem('${it.id}')">Del</button></td></tr>`;
         });
 
@@ -351,7 +397,14 @@
         document.getElementById('ds-cash').innerText = "₹ " + cash.toLocaleString('en-IN');
     }
 
-    window.deleteItem = async (id) => { if(confirm("സ്റ്റോക്കിൽ നിന്ന് നീക്കം ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
+    window.deleteItem = async (id) => { if(confirm("നീക്കം ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
+
+    // Close search results when clicking outside
+    document.addEventListener('click', (e) => {
+        if(!e.target.closest('.search-container')) {
+            document.getElementById('search-results').style.display = 'none';
+        }
+    });
 </script>
 </body>
 </html>
