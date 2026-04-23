@@ -33,7 +33,6 @@
         .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 5px; }
         .btn-primary { background: var(--accent); color: white; }
         .btn-wa { background: var(--whatsapp); color: white; }
-        .btn-danger { background: var(--danger); color: white; }
         .btn-del { background: #fee2e2; color: #ef4444; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
@@ -43,6 +42,8 @@
         .search-results { position: absolute; background: white; width: 100%; z-index: 10; border: 1px solid #ddd; border-radius: 8px; max-height: 200px; overflow-y: auto; display: none; }
         .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
         
+        .refund-box { background: #fff1f2; padding: 10px; border-radius: 8px; border: 1px solid #fda4af; margin-top: 10px; font-weight: bold; color: #be123c; }
+
         @media print { 
             .no-print { display: none !important; } 
             body { background: white; }
@@ -90,8 +91,7 @@
     <div id="sec-bill" style="display:none">
         <div class="card no-print">
             <h3>New Invoice</h3>
-            <input type="text" id="cust-name" placeholder="Customer Name" oninput="filterCustomers()">
-            <div id="cust-results" class="search-results"></div>
+            <input type="text" id="cust-name" placeholder="Customer Name">
             <input type="number" id="cust-phone" placeholder="WhatsApp Number">
             <input type="text" id="item-search" placeholder="Search Item..." oninput="filterItems()">
             <div id="search-results" class="search-results"></div>
@@ -116,15 +116,14 @@
                 <option value="cash">Cash</option><option value="gpay">G-Pay</option><option value="credit">Credit</option>
             </select>
             <button class="btn btn-primary" style="background:var(--success)" onclick="finishBill()">Save & Print</button>
-            <button class="btn btn-wa no-print" onclick="sendWhatsApp()">Share via WhatsApp</button>
         </div>
     </div>
 
     <div id="sec-return" style="display:none">
         <div class="card">
             <h3>Sales Return (വിൽപ്പന തിരിച്ചെടുക്കൽ)</h3>
-            <input type="text" id="ret-bill-id" placeholder="Enter Customer Name or Bill Details">
-            <button class="btn btn-primary" onclick="searchReturnBill()">Find Bill</button>
+            <input type="text" id="ret-bill-id" placeholder="Enter Customer Name">
+            <button class="btn btn-primary" onclick="searchReturnBill()">Search Bills</button>
             <div id="return-bill-details" style="margin-top:20px;"></div>
         </div>
     </div>
@@ -142,7 +141,7 @@
             <button class="btn btn-primary" onclick="saveItem()">Save Product</button>
         </div>
         <div class="card">
-            <table id="stock-table">
+            <table>
                 <thead><tr><th>Item</th><th>Stock</th><th>Rate</th><th>Action</th></tr></thead>
                 <tbody id="stock-body"></tbody>
             </table>
@@ -192,7 +191,6 @@
         document.getElementById('btn-'+id).classList.add('active');
     };
 
-    // --- BILLING ---
     window.filterItems = () => {
         const txt = document.getElementById('item-search').value.toLowerCase();
         const resDiv = document.getElementById('search-results');
@@ -257,30 +255,41 @@
             await updateDoc(doc(db, "inventory", item.invId), { qty: it.qty - item.qty });
         }
         alert("Bill Saved!");
-        window.print();
         location.reload();
     };
 
-    // --- SALES RETURN ---
+    // --- ENHANCED SALES RETURN LOGIC ---
     window.searchReturnBill = () => {
         const searchTxt = document.getElementById('ret-bill-id').value.toLowerCase();
         const results = sales.filter(s => s.cust.toLowerCase().includes(searchTxt));
         const container = document.getElementById('return-bill-details');
         
-        if(results.length === 0) { container.innerHTML = "No matching bills found!"; return; }
+        if(results.length === 0) { container.innerHTML = "ബില്ലുകൾ ഒന്നും കണ്ടുപിടിക്കാനായില്ല!"; return; }
 
         let html = '';
         results.forEach(bill => {
             html += `<div class="card" style="border: 1px solid #ddd;">
-                <h4>${bill.cust} (${bill.date}) - Total: ₹${bill.total}</h4>
-                <table><thead><tr><th>Item</th><th>Sold Qty</th><th>Return Qty</th><th>Action</th></tr></thead><tbody>`;
+                <div style="background:#f1f5f9; padding:10px; border-radius:8px; margin-bottom:10px;">
+                    <b>${bill.cust}</b> | ${bill.date} | Total: ₹${bill.total.toFixed(2)}
+                </div>
+                <table>
+                    <thead><tr><th>Item Name</th><th>Sold</th><th>Return Qty</th><th>Refund</th><th>Action</th></tr></thead>
+                    <tbody>`;
             
             bill.items.forEach((item, idx) => {
                 html += `<tr>
-                    <td>${item.name}</td>
+                    <td>${item.name}<br><small>Rate: ₹${item.rate}</small></td>
                     <td>${item.qty}</td>
-                    <td><input type="number" id="ret-qty-${bill.id}-${idx}" value="1" min="1" max="${item.qty}" style="width:60px; padding:5px; margin:0;"></td>
-                    <td><button class="btn-del" style="background:orange; color:white;" onclick="processReturn('${bill.id}', ${idx})">Return</button></td>
+                    <td>
+                        <input type="number" id="qty-${bill.id}-${idx}" value="1" min="1" max="${item.qty}" 
+                        oninput="calcRefund('${bill.id}', ${idx}, ${item.rate})" 
+                        style="width:60px; padding:5px; margin:0; border:1px solid blue;">
+                    </td>
+                    <td id="refund-${bill.id}-${idx}">₹${item.rate}</td>
+                    <td>
+                        <button class="btn-del" style="background:var(--accent); color:white;" 
+                        onclick="processPartialReturn('${bill.id}', ${idx})">Return Now</button>
+                    </td>
                 </tr>`;
             });
             html += `</tbody></table></div>`;
@@ -288,50 +297,51 @@
         container.innerHTML = html;
     };
 
-    window.processReturn = async (saleId, itemIdx) => {
-        const retQtyInput = document.getElementById(`ret-qty-${saleId}-${itemIdx}`);
-        const returnQty = parseFloat(retQtyInput.value);
+    window.calcRefund = (billId, idx, rate) => {
+        const qty = document.getElementById(`qty-${billId}-${idx}`).value;
+        document.getElementById(`refund-${billId}-${idx}`).innerText = "₹" + (qty * rate).toFixed(2);
+    };
+
+    window.processPartialReturn = async (saleId, itemIdx) => {
+        const returnQty = parseFloat(document.getElementById(`qty-${saleId}-${itemIdx}`).value);
         const sale = sales.find(s => s.id === saleId);
         const item = sale.items[itemIdx];
 
-        if(returnQty > item.qty || returnQty <= 0) return alert("Invalid Return Quantity!");
+        if(returnQty > item.qty || returnQty <= 0) return alert("തിരഞ്ഞെടുത്ത എണ്ണം തെറ്റാണ്!");
 
-        if(!confirm(`Return ${returnQty} nos of ${item.name}?`)) return;
+        const refundAmount = returnQty * item.rate;
+        if(!confirm(`₹${refundAmount} തിരികെ നൽകി ${returnQty} എണ്ണം റിട്ടേൺ എടുക്കണോ?`)) return;
 
-        // 1. Update Inventory Stock
+        // 1. Update Inventory (തിരികെ സ്റ്റോക്കിലേക്ക്)
         const invItem = inv.find(i => i.id === item.invId);
         if(invItem) {
             await updateDoc(doc(db, "inventory", item.invId), { qty: invItem.qty + returnQty });
         }
 
-        // 2. Update Sale Record
+        // 2. Update Sales Record (ബില്ലിൽ നിന്ന് കുറയ്ക്കുക)
         let updatedItems = [...sale.items];
-        const returnAmount = item.rate * returnQty;
-
         if(returnQty === item.qty) {
-            // Full item return
-            updatedItems.splice(itemIdx, 1);
+            updatedItems.splice(itemIdx, 1); // ഐറ്റം മുഴുവനായി പോയി
         } else {
-            // Partial item return
             updatedItems[itemIdx].qty -= returnQty;
-            updatedItems[itemIdx].total -= returnAmount;
+            updatedItems[itemIdx].total -= refundAmount;
         }
 
-        const newBillTotal = sale.total - returnAmount;
+        const newBillTotal = sale.total - refundAmount;
 
         if(updatedItems.length === 0) {
             await deleteDoc(doc(db, "sales", saleId));
-            alert("All items returned. Bill deleted.");
+            alert("മുഴുവൻ ഐറ്റങ്ങളും റിട്ടേൺ ചെയ്തു. ബില്ല് നീക്കം ചെയ്തു.");
         } else {
             await updateDoc(doc(db, "sales", saleId), { items: updatedItems, total: newBillTotal });
-            alert("Item returned and bill updated.");
+            alert(`റിട്ടേൺ വിജയകരമായി പൂർത്തിയായി! തിരികെ നൽകേണ്ട തുക: ₹${refundAmount}`);
         }
         
         document.getElementById('return-bill-details').innerHTML = '';
         document.getElementById('ret-bill-id').value = '';
     };
 
-    // --- STOCK & HELPERS ---
+    // --- OTHER UI LOGIC ---
     window.saveItem = async () => {
         const data = {
             name: document.getElementById('i-name').value,
@@ -341,7 +351,7 @@
             wholesale: parseFloat(document.getElementById('i-wholesale').value) || 0
         };
         await addDoc(collection(db, "inventory"), data);
-        alert("Product Added");
+        alert("Product Saved");
     };
 
     function refreshUI() {
@@ -364,23 +374,15 @@
         document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString();
     }
 
-    window.deleteItem = async (id) => { if(confirm("Delete product?")) await deleteDoc(doc(db, "inventory", id)); };
+    window.deleteItem = async (id) => { if(confirm("Delete item?")) await deleteDoc(doc(db, "inventory", id)); };
 
     function updateChart() {
         const ctx = document.getElementById('salesChart').getContext('2d');
         if(salesChart) salesChart.destroy();
         const labels = sales.slice(0,7).map(s => s.date).reverse();
         const data = labels.map(l => sales.filter(s => s.date === l).reduce((a, b) => a + b.total, 0));
-        salesChart = new Chart(ctx, { type:'line', data:{labels, datasets:[{label:'Sales', data, borderColor:'blue', fill:true}]} });
+        salesChart = new Chart(ctx, { type:'line', data:{labels, datasets:[{label:'Daily Sales', data, borderColor:'blue', fill:true}]} });
     }
-
-    window.sendWhatsApp = () => {
-        let phone = document.getElementById('cust-phone').value;
-        if(!phone) return alert("Phone number required");
-        let msg = `*IQRA MARKETING*\nTotal: ₹${document.getElementById('cart-total').innerText}\nItems:\n`;
-        cart.forEach(i => msg += `- ${i.name}: ${i.qty} x ${i.rate}\n`);
-        window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`);
-    };
 </script>
 </body>
 </html>
