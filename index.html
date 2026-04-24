@@ -158,10 +158,34 @@
     </div>
 
     <div id="sec-report" style="display:none">
-        <h3>Credit Ledger (കടം)</h3>
-        <div id="credit-list"></div>
+        <div class="card no-print">
+            <h3>റിപ്പോർട്ടുകൾ തിരയാൻ</h3>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div>
+                    <label>തിയതി തിരഞ്ഞെടുക്കുക:</label>
+                    <input type="date" id="filter-date" onchange="filterReports()">
+                </div>
+                <div>
+                    <label>പേര് തിരയാൻ:</label>
+                    <input type="text" id="filter-name" placeholder="Customer Name..." oninput="filterReports()">
+                </div>
+            </div>
+            <button class="btn btn-primary" style="margin-top:10px; background:#64748b;" onclick="clearFilters()">എല്ലാം കാണിക്കുക</button>
+        </div>
+
+        <div id="report-summary" class="card" style="display:none; border-left: 5px solid var(--success);">
+            <h3 id="res-name">Customer Report</h3>
+            <p id="res-period"></p>
+            <hr>
+            <div id="res-items-list"></div>
+            <h2 style="text-align:right; color:var(--accent);">Total: ₹ <span id="res-total">0</span></h2>
+            <button class="btn btn-primary no-print" onclick="window.print()">റിപ്പോർട്ട് പ്രിന്റ് ചെയ്യുക</button>
+        </div>
+
+        <h4>ബില്ലുകൾ</h4>
+        <div id="filtered-sales-list"></div>
     </div>
-</div>
+    </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -186,9 +210,9 @@
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('sec-'+id).style.display = 'block';
         document.getElementById('btn-'+id).classList.add('active');
+        if(id === 'report') filterReports();
     };
 
-    // --- SEARCH CUSTOMER ---
     window.filterCustomers = () => {
         const txt = document.getElementById('cust-name').value.toLowerCase();
         const resDiv = document.getElementById('cust-results');
@@ -199,7 +223,6 @@
         resDiv.style.display = filtered.length ? 'block' : 'none';
     };
 
-    // --- SEARCH ITEM & STOCK HINT ---
     window.filterItems = () => {
         const txt = document.getElementById('item-search').value.toLowerCase();
         const resDiv = document.getElementById('search-results');
@@ -217,17 +240,14 @@
         document.getElementById('search-results').style.display = 'none';
     };
 
-    // --- SAVE ITEM (WITH DUPLICATE CHECK) ---
     window.saveItem = async () => {
         const name = document.getElementById('i-name').value.trim();
         const buy = parseFloat(document.getElementById('i-buy').value) || 0;
         const qtyToAdd = parseFloat(document.getElementById('i-qty').value) || 0;
         const retail = parseFloat(document.getElementById('i-retail').value) || 0;
         const wholesale = parseFloat(document.getElementById('i-wholesale').value) || 0;
-
         if(!name) return alert("പേര് നൽകുക");
         const existing = inv.find(i => i.name.toLowerCase() === name.toLowerCase());
-
         if(existing) {
             if(confirm(`"${name}" നിലവിലുണ്ട്. സ്റ്റോക്ക് കൂട്ടിച്ചേർക്കണോ?`)) {
                 await updateDoc(doc(db, "inventory", existing.id), {
@@ -241,27 +261,24 @@
         ['i-name', 'i-buy', 'i-qty', 'i-retail', 'i-wholesale'].forEach(id => document.getElementById(id).value = '');
     };
 
-    // --- BILLING ---
     window.addToCart = () => {
         const id = document.getElementById('selected-item-id').value;
         const qty = parseFloat(document.getElementById('sale-qty').value);
         const gstP = parseFloat(document.getElementById('sale-gst').value) || 0;
         if(!id || !qty) return alert("Select Item and Quantity");
-        
         const it = inv.find(i => i.id === id);
         const rate = document.getElementById('rate-type').value === 'retail' ? it.retail : it.wholesale;
         const base = rate * qty;
         const gstA = (base * gstP) / 100;
-        
         cart.push({ invId: id, name: it.name, qty, rate, base, gstA, gstP, total: base + gstA });
         updateCartUI();
         ['item-search', 'selected-item-id', 'stock-hint', 'sale-qty'].forEach(i => {
             const el = document.getElementById(i);
-            if(el.tagName === 'SPAN') el.innerText = ''; else el.value = '';
+            if(el?.tagName === 'SPAN') el.innerText = ''; else if(el) el.value = '';
         });
     };
 
-    function updateCartUI() {
+    window.updateCartUI = () => {
         let tax = 0, gst = 0, grand = 0;
         document.getElementById('cart-body').innerHTML = cart.map((c, i) => {
             tax += c.base; gst += c.gstA; grand += c.total;
@@ -284,7 +301,6 @@
             time: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
             timestamp: serverTimestamp()
         };
-
         const editId = document.getElementById('edit-bill-id').value;
         if(editId) {
             const oldDoc = await getDoc(doc(db, "sales", editId));
@@ -296,18 +312,94 @@
             }
             await deleteDoc(doc(db, "sales", editId));
         }
-
         await addDoc(collection(db, "sales"), saleData);
         for(let c of cart) {
             const it = inv.find(i => i.id === c.invId);
             if(it) await updateDoc(doc(db, "inventory", c.invId), { qty: it.qty - c.qty });
         }
-        
         document.getElementById('print-info').innerText = `Cust: ${saleData.cust} | Date: ${saleData.date} | ${saleData.time}`;
         window.print();
         location.reload();
     };
 
+    window.refreshUI = () => {
+        let sVal = 0, todayS = 0, cred = 0, cash = 0;
+        const today = new Date().toLocaleDateString();
+        document.getElementById('stock-body').innerHTML = inv.map(i => {
+            sVal += (i.buy * i.qty) || 0;
+            return `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.retail}</td><td><button class="btn-del" onclick="deleteItem('${i.id}')">Del</button></td></tr>`;
+        }).join('');
+        const sortedSales = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+        document.getElementById('recent-list').innerHTML = sortedSales.slice(0,10).map(s => {
+            if(s.date === today) todayS += s.total;
+            if(s.method === 'credit') cred += s.total; else cash += s.total;
+            return `<div class="card" style="border-left: 5px solid var(--accent);">
+                <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b> <b>₹${s.total}</b></div>
+                <small>${s.date} ${s.time || ''} (${s.method})</small>
+                <ul class="bill-item-list">${s.items.map(i => `<li>${i.name} x ${i.qty}</li>`).join('')}</ul>
+                <div class="no-print" style="text-align:right; margin-top:5px;">
+                    <button class="btn-edit" onclick="editBill('${s.id}')">Edit</button>
+                    <button class="btn-edit" onclick="reprintBill('${s.id}')">Reprint</button>
+                    <button class="btn-del" onclick="deleteSale('${s.id}')">Delete</button>
+                </div>
+            </div>`;
+        }).join('');
+        document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString('en-IN');
+        document.getElementById('ds-sale').innerText = "₹ " + Math.round(todayS).toLocaleString('en-IN');
+        document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString('en-IN');
+        document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
+        filterReports();
+    }
+
+    // --- UPDATE: NEW REPORT FUNCTIONS ---
+    window.filterReports = () => {
+        const dateVal = document.getElementById('filter-date').value; 
+        const nameVal = document.getElementById('filter-name').value.toLowerCase();
+        const resDiv = document.getElementById('filtered-sales-list');
+        const summaryDiv = document.getElementById('report-summary');
+        let formattedDate = "";
+        if(dateVal) {
+            const d = new Date(dateVal);
+            formattedDate = d.toLocaleDateString();
+        }
+        let filtered = sales.filter(s => {
+            const matchDate = formattedDate ? s.date === formattedDate : true;
+            const matchName = nameVal ? s.cust.toLowerCase().includes(nameVal) : true;
+            return matchDate && matchName;
+        });
+        resDiv.innerHTML = filtered.map(s => `
+            <div class="card">
+                <div style="display:flex; justify-content:space-between;">
+                    <b>${s.cust}</b> <b>₹${s.total}</b>
+                </div>
+                <small>${s.date} | ${s.method}</small>
+                <ul class="bill-item-list">${s.items.map(i => `<li>${i.name} x ${i.qty}</li>`).join('')}</ul>
+            </div>
+        `).join('') || '<p style="text-align:center;">ബില്ലുകൾ ഒന്നും ലഭ്യമല്ല</p>';
+        if(nameVal && filtered.length > 0) {
+            summaryDiv.style.display = 'block';
+            let totalAmt = 0;
+            let itemsHtml = "<table><tr><th>Item</th><th>Qty</th><th>Total</th></tr>";
+            filtered.forEach(s => {
+                totalAmt += s.total;
+                s.items.forEach(i => {
+                    itemsHtml += `<tr><td>${i.name}</td><td>${i.qty}</td><td>₹${i.total}</td></tr>`;
+                });
+            });
+            itemsHtml += "</table>";
+            document.getElementById('res-name').innerText = nameVal.toUpperCase() + " - Report";
+            document.getElementById('res-total').innerText = totalAmt;
+            document.getElementById('res-items-list').innerHTML = itemsHtml;
+        } else { summaryDiv.style.display = 'none'; }
+    };
+
+    window.clearFilters = () => {
+        document.getElementById('filter-date').value = "";
+        document.getElementById('filter-name').value = "";
+        filterReports();
+    };
+
+    // Other Utility Functions
     window.reprintBill = (id) => {
         const s = sales.find(x => x.id === id);
         document.getElementById('cust-name').value = s.cust;
@@ -328,44 +420,6 @@
         cart = [...s.items];
         updateCartUI();
     };
-
-    function refreshUI() {
-        let sVal = 0, todayS = 0, cred = 0, cash = 0;
-        const today = new Date().toLocaleDateString();
-        const credMap = {};
-
-        document.getElementById('stock-body').innerHTML = inv.map(i => {
-            sVal += (i.buy * i.qty) || 0;
-            return `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.retail}</td><td><button class="btn-del" onclick="deleteItem('${i.id}')">Del</button></td></tr>`;
-        }).join('');
-
-        const sortedSales = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-        
-        document.getElementById('recent-list').innerHTML = sortedSales.slice(0,10).map(s => {
-            if(s.date === today) todayS += s.total;
-            if(s.method === 'credit') { cred += s.total; credMap[s.cust] = (credMap[s.cust] || 0) + s.total; } else cash += s.total;
-            return `<div class="card" style="border-left: 5px solid var(--accent);">
-                <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b> <b>₹${s.total}</b></div>
-                <small>${s.date} ${s.time || ''} (${s.method})</small>
-                <ul class="bill-item-list">${s.items.map(i => `<li>${i.name} x ${i.qty}</li>`).join('')}</ul>
-                <div class="no-print" style="text-align:right; margin-top:5px;">
-                    <button class="btn-edit" onclick="editBill('${s.id}')">Edit</button>
-                    <button class="btn-edit" onclick="reprintBill('${s.id}')">Reprint</button>
-                    <button class="btn-del" onclick="deleteSale('${s.id}')">Delete</button>
-                </div>
-            </div>`;
-        }).join('');
-
-        document.getElementById('credit-list').innerHTML = Object.keys(credMap).map(n => `
-            <div class="card" style="display:flex; justify-content:space-between; border-left: 5px solid red;">
-                <b>${n}</b> <b style="color:red;">₹${credMap[n]}</b>
-            </div>`).join('') || 'No credits';
-
-        document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString('en-IN');
-        document.getElementById('ds-sale').innerText = "₹ " + Math.round(todayS).toLocaleString('en-IN');
-        document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString('en-IN');
-        document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
-    }
 
     window.deleteItem = async (id) => { if(confirm("Delete?")) await deleteDoc(doc(db, "inventory", id)); };
     window.deleteSale = async (id) => { 
