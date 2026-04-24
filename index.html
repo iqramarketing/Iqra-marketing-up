@@ -11,6 +11,7 @@
         
         .header { background: var(--primary); color: white; padding: 25px 20px; display: flex; align-items: center; gap: 20px; border-radius: 0 0 25px 25px; }
         .logo-container { background: white; width: 75px; height: 75px; border-radius: 12px; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; }
+        .logo-container img { width: 100%; height: 100%; object-fit: contain; }
         .shop-info h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
         .shop-info p { margin: 2px 0; font-size: 0.85rem; opacity: 0.9; }
 
@@ -35,15 +36,17 @@
         th { background: #f1f5f9; padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0; }
         td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
 
-        .search-results { position: absolute; background: white; width: 90%; z-index: 100; border: 1px solid #ddd; border-radius: 8px; max-height: 200px; overflow-y: auto; display: none; }
-        .search-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
-        
+        .search-container { position: relative; width: 100%; }
+        .search-results { position: absolute; background: white; width: 100%; z-index: 100; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; display: none; }
+        .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+        .stock-indicator { color: var(--success); font-weight: bold; font-size: 0.85rem; margin: 5px 0; display: block; }
+
         .bill-item-list { padding-left: 15px; font-size: 0.8rem; color: #666; margin: 5px 0; }
 
         @media print { 
             .no-print { display: none !important; } 
-            body { background: white; padding: 0; }
-            .card { box-shadow: none; border: none; }
+            body { background: white; padding: 0; color: black; }
+            .card { box-shadow: none; border: none; width: 100%; }
             .header { color: black; background: white; border-bottom: 1px solid #000; border-radius: 0; padding: 10px 0; }
             .print-only { display: block !important; }
         }
@@ -53,7 +56,9 @@
 <body>
 
 <div class="header">
-    <div class="logo-container">IQRA</div>
+    <div class="logo-container">
+        <img src="logo.png" alt="Logo" onerror="this.outerHTML='IQRA'">
+    </div>
     <div class="shop-info">
         <h1>IQRA MARKETING</h1>
         <p>Karuvanpadi | Ph: 8089305300</p>
@@ -61,10 +66,10 @@
 </div>
 
 <nav class="nav-bar no-print">
-    <button class="nav-btn active" id="nav-home" onclick="tab('home')">Home</button>
-    <button class="nav-btn" id="nav-bill" onclick="tab('bill')">Billing</button>
-    <button class="nav-btn" id="nav-items" onclick="tab('items')">Stock</button>
-    <button class="nav-btn" id="nav-report" onclick="tab('report')">Credit</button>
+    <button class="nav-btn active" id="btn-home" onclick="tab('home')">Home</button>
+    <button class="nav-btn" id="btn-bill" onclick="tab('bill')">Billing</button>
+    <button class="nav-btn" id="btn-items" onclick="tab('items')">Stock</button>
+    <button class="nav-btn" id="btn-report" onclick="tab('report')">Credit</button>
 </nav>
 
 <div class="container">
@@ -81,14 +86,21 @@
 
     <div id="sec-bill" style="display:none">
         <div class="card no-print">
-            <h3>New Invoice</h3>
+            <h3 id="bill-title">New Invoice</h3>
             <input type="hidden" id="edit-bill-id">
-            <input type="text" id="cust-name" placeholder="Customer Name">
-            <div style="position:relative;">
+            
+            <div class="search-container">
+                <input type="text" id="cust-name" placeholder="Customer Name" oninput="filterCustomers()">
+                <div id="cust-results" class="search-results"></div>
+            </div>
+            
+            <div class="search-container">
                 <input type="text" id="item-search" placeholder="Search Item..." oninput="filterItems()">
                 <div id="search-results" class="search-results"></div>
+                <input type="hidden" id="selected-item-id">
+                <span id="stock-hint" class="stock-indicator"></span>
             </div>
-            <input type="hidden" id="selected-item-id">
+
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <select id="rate-type"><option value="retail">Retail Rate</option><option value="wholesale">Wholesale</option></select>
                 <input type="number" id="sale-qty" placeholder="Qty">
@@ -106,6 +118,9 @@
             <table>
                 <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>GST</th><th>Total</th><th class="no-print">X</th></tr></thead>
                 <tbody id="cart-body"></tbody>
+                <tfoot id="print-footer" class="print-only">
+                    <tr><td colspan="5" style="text-align:center; padding-top:15px; border:none;"><b>Thank you for visiting again!</b></td></tr>
+                </tfoot>
             </table>
             <div style="text-align: right; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
                 <p>Taxable Amt: ₹ <span id="tax-amt">0.00</span></p>
@@ -150,7 +165,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = { 
         apiKey: "AIzaSyDmviHo3-oZChgxScf4RTfQ9d8nMNxSgGI", 
@@ -170,10 +185,39 @@
         document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('sec-'+id).style.display = 'block';
-        document.getElementById('nav-'+id).classList.add('active');
+        document.getElementById('btn-'+id).classList.add('active');
     };
 
-    // --- DUPLICATE CHECK & SAVE ---
+    // --- SEARCH CUSTOMER ---
+    window.filterCustomers = () => {
+        const txt = document.getElementById('cust-name').value.toLowerCase();
+        const resDiv = document.getElementById('cust-results');
+        if(!txt) { resDiv.style.display = 'none'; return; }
+        const uniqueCusts = [...new Set(sales.map(s => s.cust))];
+        const filtered = uniqueCusts.filter(c => c.toLowerCase().includes(txt));
+        resDiv.innerHTML = filtered.map(name => `<div class="search-item" onclick="document.getElementById('cust-name').value='${name}';document.getElementById('cust-results').style.display='none'">${name}</div>`).join('');
+        resDiv.style.display = filtered.length ? 'block' : 'none';
+    };
+
+    // --- SEARCH ITEM & STOCK HINT ---
+    window.filterItems = () => {
+        const txt = document.getElementById('item-search').value.toLowerCase();
+        const resDiv = document.getElementById('search-results');
+        if(!txt) { resDiv.style.display = 'none'; return; }
+        const filtered = inv.filter(i => i.name.toLowerCase().includes(txt));
+        resDiv.innerHTML = filtered.map(it => `<div class="search-item" onclick="selectItem('${it.id}')">${it.name} <span style="float:right; color:#888;">Stock: ${it.qty}</span></div>`).join('');
+        resDiv.style.display = 'block';
+    };
+
+    window.selectItem = (id) => {
+        const it = inv.find(i => i.id === id);
+        document.getElementById('item-search').value = it.name;
+        document.getElementById('selected-item-id').value = it.id;
+        document.getElementById('stock-hint').innerText = `Current Stock: ${it.qty}`;
+        document.getElementById('search-results').style.display = 'none';
+    };
+
+    // --- SAVE ITEM (WITH DUPLICATE CHECK) ---
     window.saveItem = async () => {
         const name = document.getElementById('i-name').value.trim();
         const buy = parseFloat(document.getElementById('i-buy').value) || 0;
@@ -187,10 +231,8 @@
         if(existing) {
             if(confirm(`"${name}" നിലവിലുണ്ട്. സ്റ്റോക്ക് കൂട്ടിച്ചേർക്കണോ?`)) {
                 await updateDoc(doc(db, "inventory", existing.id), {
-                    buy: buy || existing.buy,
-                    retail: retail || existing.retail,
-                    wholesale: wholesale || existing.wholesale,
-                    qty: (parseFloat(existing.qty) || 0) + qtyToAdd
+                    buy: buy || existing.buy, retail: retail || existing.retail,
+                    wholesale: wholesale || existing.wholesale, qty: (parseFloat(existing.qty) || 0) + qtyToAdd
                 });
             }
         } else {
@@ -199,23 +241,7 @@
         ['i-name', 'i-buy', 'i-qty', 'i-retail', 'i-wholesale'].forEach(id => document.getElementById(id).value = '');
     };
 
-    // --- BILLING LOGIC ---
-    window.filterItems = () => {
-        const txt = document.getElementById('item-search').value.toLowerCase();
-        const resDiv = document.getElementById('search-results');
-        if(!txt) { resDiv.style.display = 'none'; return; }
-        const filtered = inv.filter(i => i.name.toLowerCase().includes(txt));
-        resDiv.innerHTML = filtered.map(it => `<div class="search-item" onclick="selectItem('${it.id}')">${it.name} <small>(Stock: ${it.qty})</small></div>`).join('');
-        resDiv.style.display = 'block';
-    };
-
-    window.selectItem = (id) => {
-        const it = inv.find(i => i.id === id);
-        document.getElementById('item-search').value = it.name;
-        document.getElementById('selected-item-id').value = it.id;
-        document.getElementById('search-results').style.display = 'none';
-    };
-
+    // --- BILLING ---
     window.addToCart = () => {
         const id = document.getElementById('selected-item-id').value;
         const qty = parseFloat(document.getElementById('sale-qty').value);
@@ -229,8 +255,10 @@
         
         cart.push({ invId: id, name: it.name, qty, rate, base, gstA, gstP, total: base + gstA });
         updateCartUI();
-        document.getElementById('item-search').value = '';
-        document.getElementById('sale-qty').value = '';
+        ['item-search', 'selected-item-id', 'stock-hint', 'sale-qty'].forEach(i => {
+            const el = document.getElementById(i);
+            if(el.tagName === 'SPAN') el.innerText = ''; else el.value = '';
+        });
     };
 
     function updateCartUI() {
@@ -258,7 +286,16 @@
         };
 
         const editId = document.getElementById('edit-bill-id').value;
-        if(editId) await deleteDoc(doc(db, "sales", editId));
+        if(editId) {
+            const oldDoc = await getDoc(doc(db, "sales", editId));
+            if(oldDoc.exists()) {
+                for(let item of oldDoc.data().items) {
+                    const it = inv.find(i => i.id === item.invId);
+                    if(it) await updateDoc(doc(db, "inventory", item.invId), { qty: it.qty + item.qty });
+                }
+            }
+            await deleteDoc(doc(db, "sales", editId));
+        }
 
         await addDoc(collection(db, "sales"), saleData);
         for(let c of cart) {
@@ -278,12 +315,12 @@
         updateCartUI();
         tab('bill');
         document.getElementById('print-info').innerText = `REPRINT | Cust: ${s.cust} | Date: ${s.date}`;
-        setTimeout(() => window.print(), 500);
+        setTimeout(() => window.print(), 700);
     };
 
     window.editBill = (id) => {
-        const pw = prompt("Enter Password to Edit:");
-        if(pw !== ADMIN_PW) return alert("Access Denied");
+        const pw = prompt("Password:");
+        if(pw !== ADMIN_PW) return alert("Denied");
         const s = sales.find(x => x.id === id);
         tab('bill');
         document.getElementById('edit-bill-id').value = s.id;
@@ -306,15 +343,9 @@
         
         document.getElementById('recent-list').innerHTML = sortedSales.slice(0,10).map(s => {
             if(s.date === today) todayS += s.total;
-            if(s.method === 'credit') {
-                cred += s.total;
-                credMap[s.cust] = (credMap[s.cust] || 0) + s.total;
-            } else cash += s.total;
-
+            if(s.method === 'credit') { cred += s.total; credMap[s.cust] = (credMap[s.cust] || 0) + s.total; } else cash += s.total;
             return `<div class="card" style="border-left: 5px solid var(--accent);">
-                <div style="display:flex; justify-content:space-between;">
-                    <b>${s.cust}</b> <b>₹${s.total}</b>
-                </div>
+                <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b> <b>₹${s.total}</b></div>
                 <small>${s.date} ${s.time || ''} (${s.method})</small>
                 <ul class="bill-item-list">${s.items.map(i => `<li>${i.name} x ${i.qty}</li>`).join('')}</ul>
                 <div class="no-print" style="text-align:right; margin-top:5px;">
@@ -325,13 +356,10 @@
             </div>`;
         }).join('');
 
-        let cHtml = '';
-        for(let n in credMap) {
-            cHtml += `<div class="card" style="display:flex; justify-content:space-between; border-left: 5px solid red;">
+        document.getElementById('credit-list').innerHTML = Object.keys(credMap).map(n => `
+            <div class="card" style="display:flex; justify-content:space-between; border-left: 5px solid red;">
                 <b>${n}</b> <b style="color:red;">₹${credMap[n]}</b>
-            </div>`;
-        }
-        document.getElementById('credit-list').innerHTML = cHtml || 'No credits';
+            </div>`).join('') || 'No credits';
 
         document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString('en-IN');
         document.getElementById('ds-sale').innerText = "₹ " + Math.round(todayS).toLocaleString('en-IN');
@@ -339,18 +367,22 @@
         document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
     }
 
-    window.deleteItem = async (id) => { if(confirm("Delete this product?")) await deleteDoc(doc(db, "inventory", id)); };
-    
+    window.deleteItem = async (id) => { if(confirm("Delete?")) await deleteDoc(doc(db, "inventory", id)); };
     window.deleteSale = async (id) => { 
-        const pw = prompt("Enter Password to Delete:");
-        if(pw === ADMIN_PW && confirm("Delete this bill permanently?")) {
+        const pw = prompt("Password:");
+        if(pw === ADMIN_PW && confirm("Delete bill?")) {
+            const sDoc = await getDoc(doc(db, "sales", id));
+            for(let item of sDoc.data().items) {
+                const it = inv.find(i => i.id === item.invId);
+                if(it) await updateDoc(doc(db, "inventory", item.invId), { qty: it.qty + item.qty });
+            }
             await deleteDoc(doc(db, "sales", id)); 
-        } else if (pw !== ADMIN_PW) alert("Wrong Password");
+        }
     };
 
     document.addEventListener('click', (e) => {
-        if(!e.target.closest('.search-results') && !e.target.closest('#item-search')) {
-            document.getElementById('search-results').style.display = 'none';
+        if(!e.target.closest('.search-container')) {
+            document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none');
         }
     });
 </script>
