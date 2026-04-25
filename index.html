@@ -229,7 +229,7 @@
         const last7Days = [...Array(7)].map((_, i) => {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            return d.toLocaleDateString();
+            return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
         }).reverse();
 
         const dailyTotals = last7Days.map(date => {
@@ -347,7 +347,7 @@
             total: parseFloat(document.getElementById('cart-total').innerText),
             method: document.getElementById('pay-method').value,
             items: cart,
-            date: now.toLocaleDateString(),
+            date: now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear(),
             time: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
             timestamp: serverTimestamp()
         };
@@ -367,7 +367,9 @@
     // --- REFRESH UI ---
     window.refreshUI = () => {
         let sVal = 0, todayS = 0, cred = 0, cash = 0;
-        const today = new Date().toLocaleDateString();
+        const now = new Date();
+        const today = now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear();
+        
         document.getElementById('stock-body').innerHTML = inv.map(i => {
             sVal += (i.buy * i.qty) || 0;
             return `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.retail}</td><td><button class="btn-del" onclick="deleteItem('${i.id}')">Del</button></td></tr>`;
@@ -396,8 +398,68 @@
         updateChart();
     };
 
-    // ബട്ടൺ ഫംഗ്ഷനുകൾ ഗ്ലോബൽ ആക്കുന്നു
+    // --- ADDITIONAL FUNCTIONS ---
+    window.filterReports = () => {
+        const d = document.getElementById('filter-date').value;
+        const n = document.getElementById('filter-name').value.toLowerCase();
+        
+        let fDate = "";
+        if(d) {
+            const dateParts = d.split('-');
+            fDate = `${parseInt(dateParts[2])}/${parseInt(dateParts[1])}/${dateParts[0]}`;
+        }
+
+        const filtered = sales.filter(s => {
+            const matchesDate = fDate ? s.date === fDate : true;
+            const matchesName = n ? s.cust.toLowerCase().includes(n) : true;
+            return matchesDate && matchesName;
+        });
+        
+        const listDiv = document.getElementById('filtered-sales-list');
+        listDiv.innerHTML = filtered.map(s => `
+            <div class="card">
+                <div style="display:flex; justify-content:space-between;">
+                    <b>${s.cust}</b>
+                    <b>₹${s.total}</b>
+                </div>
+                <small>${s.date} | ${s.method}</small>
+            </div>
+        `).join('');
+        
+        if(n || d) {
+            let total = filtered.reduce((acc, curr) => acc + curr.total, 0);
+            document.getElementById('report-summary').style.display = 'block';
+            document.getElementById('res-total').innerText = Math.round(total);
+            document.getElementById('res-name').innerText = n ? n.toUpperCase() : "Sales Report";
+        } else {
+            document.getElementById('report-summary').style.display = 'none';
+        }
+    };
+
+    window.editBill = (id) => {
+        const s = sales.find(x => x.id === id);
+        if(!s) return;
+        tab('bill');
+        document.getElementById('edit-bill-id').value = id;
+        document.getElementById('cust-name').value = s.cust;
+        document.getElementById('pay-method').value = s.method;
+        cart = [...s.items];
+        updateCartUI();
+        document.getElementById('bill-title').innerText = "Edit Invoice";
+    };
+
+    window.reprintBill = (id) => {
+        const s = sales.find(x => x.id === id);
+        if(!s) return;
+        document.getElementById('cust-name').value = s.cust;
+        document.getElementById('print-bill-meta').innerText = `Cust: ${s.cust} | Date: ${s.date} ${s.time}`;
+        cart = [...s.items];
+        updateCartUI();
+        setTimeout(() => { window.print(); location.reload(); }, 500);
+    };
+
     window.deleteItem = async (id) => { if(confirm("Delete Item?")) await deleteDoc(doc(db, "inventory", id)); };
+    
     window.deleteSale = async (id, withPrompt = true) => {
         if(withPrompt) {
             if (prompt("Password?") !== ADMIN_PW) return alert("Wrong!");
