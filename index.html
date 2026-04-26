@@ -10,14 +10,14 @@
         :root { --primary: #1e293b; --accent: #2563eb; --bg: #f8fafc; --text: #334155; --success: #059669; --danger: #ef4444; }
         body { font-family: 'Manjari', sans-serif; background: var(--bg); margin: 0; padding-bottom: 60px; color: var(--text); }
         
-        /* Login Styles */
         #login-screen { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--primary); z-index: 2000; display: flex; align-items: center; justify-content: center; color: white; }
         .login-box { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; color: var(--text); text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
 
         .header { background: var(--primary); color: white; padding: 25px 20px; display: flex; align-items: center; gap: 20px; border-radius: 0 0 25px 25px; }
         .logo-container { background: white; width: 75px; height: 75px; border-radius: 12px; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; }
+        .logo-container img { width: 100%; height: 100%; object-fit: contain; }
         .shop-info h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
-        
+
         .nav-bar { display: grid; grid-template-columns: repeat(5, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .nav-btn { border: none; background: none; padding: 15px 5px; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; font-size: 0.8rem; }
         .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); background: #f1f5f9; }
@@ -45,11 +45,11 @@
         
         @media print { 
             .no-print { display: none !important; } 
-            .print-only { display: block !important; text-align: center; }
-            .card { box-shadow: none; border: none; }
+            .print-header { display: block !important; text-align: center; border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+            body { background: white; color: black; }
         }
+        .print-header { display: none; }
         .admin-only { display: none; } 
-        .print-only { display: none; }
     </style>
 </head>
 <body>
@@ -66,7 +66,9 @@
 
 <div id="main-content" style="display:none">
     <div class="header no-print">
-        <div class="logo-container">IQRA</div>
+        <div class="logo-container">
+            <img src="logo.png" alt="Logo" onerror="this.outerHTML='IQRA'">
+        </div>
         <div class="shop-info">
             <h1>IQRA MARKETING</h1>
             <p>Karuvanpadi | Ph: 8089305300</p>
@@ -119,7 +121,7 @@
             </div>
 
             <div class="card">
-                <div class="print-only">
+                <div class="print-header">
                     <h2>IQRA MARKETING</h2>
                     <p>Karuvanpadi | Ph: 8089305300</p>
                     <p id="print-bill-meta"></p>
@@ -136,6 +138,7 @@
                 <div class="no-print">
                     <select id="pay-method"><option value="cash">Cash</option><option value="gpay">G-Pay</option><option value="credit">Credit</option></select>
                     <button class="btn btn-primary" style="background:var(--success)" onclick="finishBill()">Save & Print</button>
+                    <button class="btn" style="background:#64748b; color:white; margin-top:10px;" onclick="location.reload()">New Bill / Cancel</button>
                 </div>
             </div>
         </div>
@@ -155,20 +158,27 @@
                 <button class="btn btn-primary" onclick="saveItem()">Save Product</button>
             </div>
             <div class="card">
-                <table style="width:100%">
-                    <thead><tr><th>Item</th><th>Stock</th><th>Action</th></tr></thead>
+                <table>
+                    <thead><tr><th>Item</th><th>Stock</th><th>Rate</th><th>Action</th></tr></thead>
                     <tbody id="stock-body"></tbody>
                 </table>
             </div>
         </div>
         
         <div id="sec-report" style="display:none">
-            <div class="card">
+            <div class="card no-print">
                 <h3>Search Reports</h3>
-                <input type="date" id="filter-date" onchange="filterReports()">
-                <div id="report-summary" style="margin-top:20px; font-weight:bold;"></div>
-                <div id="filtered-sales-list"></div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <input type="date" id="filter-date" onchange="filterReports()">
+                    <input type="text" id="filter-name" placeholder="Customer Name..." oninput="filterReports()">
+                </div>
             </div>
+            <div id="report-summary" class="card" style="display:none; border-left: 5px solid var(--success);">
+                <h3 id="res-name">Sales Report</h3>
+                <h2 style="text-align:right; color:var(--accent);">Total: ₹ <span id="res-total">0</span></h2>
+                <button class="btn btn-primary no-print" onclick="window.print()">Print Report</button>
+            </div>
+            <div id="filtered-sales-list"></div>
         </div>
 
         <div id="sec-return" style="display:none">
@@ -191,55 +201,31 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    let inv = [], sales = [], cart = [], myChart = null;
-    let currentUser = ""; 
+    let inv = [], sales = [], cart = [], myChart = null, currentUser = "";
     const ADMIN_PW = "nishad305300";
 
-    // --- LOGIN ---
-    window.onload = () => {
-        document.getElementById('login-screen').style.display = 'flex';
-        document.getElementById('main-content').style.display = 'none';
-    };
+    window.onload = () => { document.getElementById('login-screen').style.display = 'flex'; };
 
     window.checkLogin = () => {
         const pass = document.getElementById('login-pass').value;
-        const err = document.getElementById('login-err');
-        
-        if(pass === ADMIN_PW) {
-            currentUser = "admin";
-            loginSuccess();
-        } else if(pass === "iqra300") {
-            currentUser = "staff";
-            loginSuccess();
-        } else {
-            err.innerText = "തെറ്റായ പാസ്‌വേഡ്!";
-            document.getElementById('login-pass').value = "";
-        }
+        if(pass === ADMIN_PW) { currentUser = "admin"; loginSuccess(); }
+        else if(pass === "iqra300") { currentUser = "staff"; loginSuccess(); }
+        else { document.getElementById('login-err').innerText = "തെറ്റായ പാസ്‌വേഡ്!"; }
     };
 
     function loginSuccess() {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         document.getElementById('user-label').innerText = "User: " + currentUser.toUpperCase();
-        
-        const adminElements = document.querySelectorAll('.admin-only');
-        if(currentUser === "staff") {
-            adminElements.forEach(el => el.style.setProperty('display', 'none', 'important'));
-        } else {
-            adminElements.forEach(el => el.style.setProperty('display', 'block', 'important'));
-        }
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = (currentUser === 'admin' ? 'block' : 'none'));
         tab('home');
-        updateChart();
     }
 
-    // --- REALTIME SYNC ---
     onSnapshot(collection(db, "inventory"), (s) => { inv = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
     onSnapshot(collection(db, "sales"), (s) => { sales = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
 
     window.tab = (id) => {
-        if(currentUser === "staff" && (id === 'items' || id === 'report')) {
-            alert("Permission Denied!"); return;
-        }
+        if(currentUser === "staff" && (id === 'items' || id === 'report')) return alert("Permission Denied!");
         document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('sec-'+id).style.display = 'block';
@@ -247,7 +233,6 @@
         if(id === 'home' && currentUser === "admin") updateChart();
     };
 
-    // --- BILLING ---
     window.filterItems = () => {
         const txt = document.getElementById('item-search').value.toLowerCase();
         const resDiv = document.getElementById('search-results');
@@ -270,14 +255,10 @@
         const qty = parseFloat(document.getElementById('sale-qty').value);
         const gstP = parseFloat(document.getElementById('sale-gst').value) || 0;
         if(!id || !qty) return alert("Select Item & Qty");
-        
         const it = inv.find(i => i.id === id);
-        if(qty > it.qty) return alert("Insufficient Stock!");
-        
         const rate = document.getElementById('rate-type').value === 'retail' ? it.retail : (it.wholesale || it.retail);
         const base = rate * qty;
         const gstA = (base * gstP) / 100;
-        
         cart.push({ invId: id, name: it.name, qty, rate, base, gstA, gstP, total: base + gstA });
         updateCartUI();
         document.getElementById('item-search').value = '';
@@ -309,29 +290,23 @@
             time: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
             timestamp: serverTimestamp()
         };
-
-        if(editId) await deleteSale(editId, false); // Edit മോഡിൽ പഴയ ബില്ല് താൽക്കാലികമായി നീക്കുന്നു
-        
+        if(editId) await deleteSale(editId, false);
         await addDoc(collection(db, "sales"), saleData);
         for(let c of cart) {
             const it = inv.find(i => i.id === c.invId);
             if(it) await updateDoc(doc(db, "inventory", c.invId), { qty: it.qty - c.qty });
         }
-        
         document.getElementById('print-bill-meta').innerText = `Cust: ${saleData.cust} | Date: ${saleData.date}`;
         setTimeout(() => { window.print(); location.reload(); }, 500);
     };
 
-    // --- REFRESH UI ---
     window.refreshUI = () => {
         const today = new Date().toLocaleDateString('en-GB');
         let sVal = 0, todayS = 0, cred = 0, cash = 0;
-
         document.getElementById('stock-body').innerHTML = inv.map(i => {
             sVal += (i.buy * i.qty) || 0;
-            return `<tr><td>${i.name}</td><td>${i.qty}</td><td><button class="btn-del" onclick="deleteItem('${i.id}')">Del</button></td></tr>`;
+            return `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.retail}</td><td><button class="btn-del" onclick="deleteItem('${i.id}')">Del</button></td></tr>`;
         }).join('');
-
         const sorted = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
         document.getElementById('recent-list').innerHTML = sorted.slice(0,10).map(s => {
             if(s.date === today) todayS += s.total;
@@ -341,17 +316,33 @@
                 <small>${s.date} | ${s.method}</small>
                 <div class="no-print" style="margin-top:10px;">
                     <button class="btn-edit" onclick="editBill('${s.id}')">Edit</button>
+                    <button class="btn-edit" onclick="reprintBill('${s.id}')">Print</button>
                     <button class="btn-del" onclick="deleteSale('${s.id}')">Del</button>
                 </div>
             </div>`;
         }).join('');
-
         if(currentUser === "admin") {
             document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString('en-IN');
             document.getElementById('ds-sale').innerText = "₹ " + Math.round(todayS).toLocaleString('en-IN');
             document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString('en-IN');
             document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
         }
+    };
+
+    window.filterReports = () => {
+        const d = document.getElementById('filter-date').value;
+        const n = document.getElementById('filter-name').value.toLowerCase();
+        let fDate = d ? new Date(d).toLocaleDateString('en-GB') : "";
+        const filtered = sales.filter(s => (fDate ? s.date === fDate : true) && (n ? s.cust.toLowerCase().includes(n) : true));
+        document.getElementById('filtered-sales-list').innerHTML = filtered.map(s => `
+            <div class="card"><div style="display:flex; justify-content:space-between;"><b>${s.cust}</b><b>₹${s.total}</b></div><small>${s.date} | ${s.method}</small></div>
+        `).join('');
+        if(n || d) {
+            let total = filtered.reduce((acc, curr) => acc + curr.total, 0);
+            document.getElementById('report-summary').style.display = 'block';
+            document.getElementById('res-total').innerText = Math.round(total);
+            document.getElementById('res-name').innerText = n ? n.toUpperCase() : "Sales Report";
+        } else { document.getElementById('report-summary').style.display = 'none'; }
     };
 
     window.editBill = (id) => {
@@ -366,15 +357,20 @@
         document.getElementById('bill-title').innerText = "Edit Invoice";
     };
 
+    window.reprintBill = (id) => {
+        const s = sales.find(x => x.id === id);
+        if(!s) return;
+        document.getElementById('print-bill-meta').innerText = `Cust: ${s.cust} | Date: ${s.date}`;
+        cart = [...s.items];
+        updateCartUI();
+        setTimeout(() => { window.print(); location.reload(); }, 500);
+    };
+
     window.deleteSale = async (id, withPrompt = true) => {
-        if(withPrompt) {
-            if (currentUser !== "admin") return alert("Admin Only!");
-            if(!confirm("ഈ ബില്ല് ഡിലീറ്റ് ചെയ്യണോ?")) return;
-        }
+        if(withPrompt && (currentUser !== "admin" || !confirm("Delete this bill?"))) return;
         const sDoc = await getDoc(doc(db, "sales", id));
         if(!sDoc.exists()) return;
-        const sData = sDoc.data();
-        for(let item of sData.items) {
+        for(let item of sDoc.data().items) {
             const it = inv.find(i => i.id === item.invId);
             if(it) await updateDoc(doc(db, "inventory", item.invId), { qty: it.qty + item.qty });
         }
@@ -387,26 +383,19 @@
         const qty = parseFloat(document.getElementById('i-qty').value) || 0;
         const retail = parseFloat(document.getElementById('i-retail').value) || 0;
         const wholesale = parseFloat(document.getElementById('i-wholesale').value) || 0;
-        if(!name) return;
-        await addDoc(collection(db, "inventory"), { name, buy, qty, retail, wholesale });
-        alert("Saved!");
+        if(name) await addDoc(collection(db, "inventory"), { name, buy, qty, retail, wholesale });
     };
 
     window.updateChart = () => {
         if(currentUser !== "admin") return;
-        const ctx = document.getElementById('salesChart')?.getContext('2d');
-        if(!ctx) return;
+        const ctx = document.getElementById('salesChart').getContext('2d');
         if(myChart) myChart.destroy();
         const last7Days = [...Array(7)].map((_, i) => {
             const d = new Date(); d.setDate(d.getDate() - i);
             return d.toLocaleDateString('en-GB');
         }).reverse();
         const chartData = last7Days.map(date => sales.filter(s => s.date === date).reduce((sum, s) => sum + s.total, 0));
-        myChart = new Chart(ctx, {
-            type: 'line',
-            data: { labels: last7Days, datasets: [{ label: 'Sales (₹)', data: chartData, borderColor: '#2563eb', fill: true, backgroundColor: 'rgba(37, 99, 235, 0.1)' }] },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+        myChart = new Chart(ctx, { type: 'line', data: { labels: last7Days, datasets: [{ label: 'Sales (₹)', data: chartData, borderColor: '#2563eb', fill: true, backgroundColor: 'rgba(37, 99, 235, 0.1)' }] }, options: { responsive: true, maintainAspectRatio: false } });
     };
 
     window.deleteItem = async (id) => { if(confirm("Delete Item?")) await deleteDoc(doc(db, "inventory", id)); };
