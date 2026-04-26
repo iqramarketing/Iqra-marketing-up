@@ -117,7 +117,16 @@
                 <p id="print-bill-meta"></p>
             </div>
             <table id="bill-table">
-                <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>GST</th><th>Total</th><th class="no-print">X</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Sl</th> <th>Item</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>GST</th>
+                        <th>Total</th>
+                        <th class="no-print">X</th>
+                    </tr>
+                </thead>
                 <tbody id="cart-body"></tbody>
             </table>
             <div style="text-align: right; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
@@ -223,24 +232,19 @@
         if(id === 'home') updateChart();
     };
 
-    // --- CHART LOGIC ---
     window.updateChart = () => {
         const chartElem = document.getElementById('salesChart');
         if(!chartElem) return;
         const ctx = chartElem.getContext('2d');
-        
         const last7Days = [...Array(7)].map((_, i) => {
             const d = new Date();
             d.setDate(d.getDate() - i);
             return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
         }).reverse();
-
         const dailyTotals = last7Days.map(date => {
             return sales.filter(s => s.date === date).reduce((sum, s) => sum + s.total, 0);
         });
-
         if (myChart) myChart.destroy();
-
         myChart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -264,7 +268,6 @@
         });
     };
 
-    // --- SEARCH LOGIC ---
     window.filterCustomers = () => {
         const txt = document.getElementById('cust-name').value.toLowerCase();
         const resDiv = document.getElementById('cust-results');
@@ -292,7 +295,6 @@
         document.getElementById('search-results').style.display = 'none';
     };
 
-    // --- STOCK ---
     window.saveItem = async () => {
         const name = document.getElementById('i-name').value.trim();
         const buy = parseFloat(document.getElementById('i-buy').value) || 0;
@@ -312,7 +314,6 @@
         ['i-name', 'i-buy', 'i-qty', 'i-retail', 'i-wholesale'].forEach(id => document.getElementById(id).value = '');
     };
 
-    // --- BILLING ---
     window.addToCart = () => {
         const id = document.getElementById('selected-item-id').value;
         const qty = parseFloat(document.getElementById('sale-qty').value);
@@ -330,11 +331,22 @@
         document.getElementById('stock-hint').innerText='';
     };
 
+    // --- അപ്‌ഡേറ്റ് ചെയ്ത UI ഫംഗ്ഷൻ (Sl No ചേർത്തു) ---
     window.updateCartUI = () => {
         let tax = 0, gst = 0, grand = 0;
         document.getElementById('cart-body').innerHTML = cart.map((c, i) => {
             tax += c.base; gst += c.gstA; grand += c.total;
-            return `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.rate}</td><td>${c.gstP}%</td><td>${c.total.toFixed(2)}</td><td class="no-print"><button onclick="cart.splice(${i},1);updateCartUI()" class="btn-del">X</button></td></tr>`;
+            return `<tr>
+                <td>${i + 1}</td>
+                <td>${c.name}</td>
+                <td>${c.qty}</td>
+                <td>${c.rate}</td>
+                <td>${c.gstP}%</td>
+                <td>${c.total.toFixed(2)}</td>
+                <td class="no-print">
+                    <button onclick="cart.splice(${i},1);updateCartUI()" class="btn-del">X</button>
+                </td>
+            </tr>`;
         }).join('');
         document.getElementById('tax-amt').innerText = tax.toFixed(2);
         document.getElementById('gst-amt').innerText = gst.toFixed(2);
@@ -354,30 +366,24 @@
             time: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
             timestamp: serverTimestamp()
         };
-
         if(editId) await deleteSale(editId, false);
-        
         await addDoc(collection(db, "sales"), saleData);
         for(let c of cart) {
             const it = inv.find(i => i.id === c.invId);
             if(it) await updateDoc(doc(db, "inventory", c.invId), { qty: it.qty - c.qty });
         }
-        
         document.getElementById('print-bill-meta').innerText = `Cust: ${saleData.cust} | Date: ${saleData.date} ${saleData.time}`;
         setTimeout(() => { window.print(); location.reload(); }, 500);
     };
 
-    // --- REFRESH UI ---
     window.refreshUI = () => {
         let sVal = 0, todayS = 0, cred = 0, cash = 0;
         const now = new Date();
         const today = now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear();
-        
         document.getElementById('stock-body').innerHTML = inv.map(i => {
             sVal += (i.buy * i.qty) || 0;
             return `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.retail}</td><td><button class="btn-del" onclick="deleteItem('${i.id}')">Del</button></td></tr>`;
         }).join('');
-
         const sorted = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
         document.getElementById('recent-list').innerHTML = sorted.slice(0,10).map(s => {
             if(s.date === today) todayS += s.total;
@@ -392,43 +398,33 @@
                 </div>
             </div>`;
         }).join('');
-
         document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString('en-IN');
         document.getElementById('ds-sale').innerText = "₹ " + Math.round(todayS).toLocaleString('en-IN');
         document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString('en-IN');
         document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
-        
         updateChart();
     };
 
-    // --- ADDITIONAL FUNCTIONS ---
     window.filterReports = () => {
         const d = document.getElementById('filter-date').value;
         const n = document.getElementById('filter-name').value.toLowerCase();
-        
         let fDate = "";
         if(d) {
             const dateParts = d.split('-');
             fDate = `${parseInt(dateParts[2])}/${parseInt(dateParts[1])}/${dateParts[0]}`;
         }
-
         const filtered = sales.filter(s => {
             const matchesDate = fDate ? s.date === fDate : true;
             const matchesName = n ? s.cust.toLowerCase().includes(n) : true;
             return matchesDate && matchesName;
         });
-        
         const listDiv = document.getElementById('filtered-sales-list');
         listDiv.innerHTML = filtered.map(s => `
             <div class="card">
-                <div style="display:flex; justify-content:space-between;">
-                    <b>${s.cust}</b>
-                    <b>₹${s.total}</b>
-                </div>
+                <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b><b>₹${s.total}</b></div>
                 <small>${s.date} | ${s.method}</small>
             </div>
         `).join('');
-        
         if(n || d) {
             let total = filtered.reduce((acc, curr) => acc + curr.total, 0);
             document.getElementById('report-summary').style.display = 'block';
@@ -482,7 +478,6 @@
         if(!e.target.closest('.search-container')) document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none');
     });
 
-    // --- NEW RETURN LOGIC WITH CUSTOMER SEARCH ---
     window.filterReturnCustomers = () => {
         const txt = document.getElementById('ret-cust').value.toLowerCase();
         const resDiv = document.getElementById('ret-cust-results');
@@ -514,41 +509,22 @@
         const qty = parseFloat(document.getElementById('ret-qty').value);
         const rate = parseFloat(document.getElementById('ret-rate').value);
         const method = document.getElementById('ret-method').value;
-
-        if (!cust || !itemId || !qty || !rate) {
-            return alert("എല്ലാ വിവരങ്ങളും പൂരിപ്പിക്കുക (Fill all fields)");
-        }
-
+        if (!cust || !itemId || !qty || !rate) return alert("എല്ലാ വിവരങ്ങളും പൂരിപ്പിക്കുക (Fill all fields)");
         const totalRefund = qty * rate;
         const now = new Date();
-
         try {
-            // സെയിൽസിൽ മൈനസ് എൻട്രി ചേർക്കുന്നു
             await addDoc(collection(db, "sales"), {
-                cust: cust, 
-                total: -totalRefund,
-                method: method,
+                cust: cust, total: -totalRefund, method: method,
                 items: [{ name: "Return: " + document.getElementById('ret-item-search').value, qty: qty, total: -totalRefund }],
                 date: now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear(),
                 time: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                timestamp: serverTimestamp(),
-                isReturn: true
+                timestamp: serverTimestamp(), isReturn: true
             });
-
-            // ഇൻവെന്ററിയിൽ സ്റ്റോക്ക് കൂട്ടുന്നു
             const it = inv.find(i => i.id === itemId);
-            if (it) {
-                const currentQty = Number(it.qty) || 0;
-                await updateDoc(doc(db, "inventory", itemId), { qty: currentQty + qty });
-            }
-
+            if (it) await updateDoc(doc(db, "inventory", itemId), { qty: (Number(it.qty) || 0) + qty });
             alert("റിട്ടേൺ വിജയകരമായി പൂർത്തിയായി!");
             location.reload(); 
-
-        } catch (error) {
-            console.error("Error:", error);
-            alert("പിശക് സംഭവിച്ചു!");
-        }
+        } catch (error) { alert("പിശക് സംഭവിച്ചു!"); }
     };
 </script>
 </body>
