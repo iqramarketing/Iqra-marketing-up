@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --primary: #1e293b; --accent: #2563eb; --bg: #f8fafc; --text: #334155; --success: #059669; --danger: #ef4444; --warning: #f59e0b; }
+        :root { --primary: #1e293b; --accent: #2563eb; --bg: #f8fafc; --text: #334155; --success: #059669; --danger: #ef4444; }
         body { font-family: 'Manjari', sans-serif; background: var(--bg); margin: 0; padding-bottom: 60px; color: var(--text); }
         
         #login-screen { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--primary); z-index: 2000; display: flex; align-items: center; justify-content: center; color: white; }
@@ -26,7 +26,7 @@
         
         .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
         .stat-box { padding: 15px; border-radius: 12px; color: white; text-align: center; }
-        .blue { background: #3b82f6; } .green { background: #10b981; } .red { background: var(--danger); } .purple { background: #8b5cf6; } .orange { background: var(--warning); }
+        .blue { background: #3b82f6; } .green { background: #10b981; } .red { background: var(--danger); } .purple { background: #8b5cf6; }
 
         input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-family: 'Manjari'; }
         .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
@@ -38,7 +38,6 @@
         th { background: #f1f5f9; padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0; }
         td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
 
-        .low-stock { color: var(--danger); font-weight: bold; }
         .search-results { background: white; width: 100%; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; display: none; margin-top: -10px; margin-bottom: 10px; }
         .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
         
@@ -83,7 +82,7 @@
                 <div class="stat-box blue"><h6>Stock Value</h6><h3 id="ds-stock">₹ 0</h3></div>
                 <div class="stat-box green"><h6>Today Sale</h6><h3 id="ds-sale">₹ 0</h3></div>
                 <div class="stat-box red"><h6>Total Credit</h6><h3 id="ds-cred">₹ 0</h3></div>
-                <div class="stat-box orange"><h6>Today Profit</h6><h3 id="ds-profit">₹ 0</h3></div>
+                <div class="stat-box purple"><h6>Cash/G-Pay</h6><h3 id="ds-cash">₹ 0</h3></div>
             </div>
             <div class="card no-print admin-only">
                 <h3>Sales Analytics (7 Days)</h3>
@@ -100,7 +99,7 @@
                 <input type="text" id="cust-name" placeholder="Customer Name">
                 <input type="text" id="item-search" placeholder="Search Item..." oninput="filterItems('item-search', 'search-results', selectItem)">
                 <div id="search-results" class="search-results"></div>
-                <span id="stock-hint" style="font-weight:bold; font-size:0.8rem;"></span>
+                <span id="stock-hint" style="color:var(--success); font-weight:bold; font-size:0.8rem;"></span>
                 <input type="hidden" id="selected-item-id">
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                     <select id="rate-type"><option value="retail">Retail Rate</option><option value="wholesale">Wholesale</option></select>
@@ -222,9 +221,7 @@
         const it = inv.find(i => i.id === id);
         document.getElementById('item-search').value = it.name;
         document.getElementById('selected-item-id').value = id;
-        const hint = document.getElementById('stock-hint');
-        hint.innerText = "Stock: " + it.qty;
-        hint.style.color = it.qty <= 5 ? "red" : "green";
+        document.getElementById('stock-hint').innerText = "Stock: " + it.qty;
         document.getElementById('search-results').style.display = 'none';
     };
 
@@ -243,9 +240,8 @@
         const it = inv.find(i => i.id === id);
         const rate = document.getElementById('rate-type').value === 'retail' ? it.retail : (it.wholesale || it.retail);
         const base = rate * qty;
-        const buyTotal = (it.buy || 0) * qty;
         const gstA = (base * gstP) / 100;
-        cart.push({ invId: id, name: it.name, qty, rate, base, buyTotal, gstP, gstA, total: base + gstA });
+        cart.push({ invId: id, name: it.name, qty, rate, gstP, gstA, total: base + gstA });
         renderCart();
         document.getElementById('item-search').value = "";
         document.getElementById('stock-hint').innerText = "";
@@ -254,7 +250,7 @@
     function renderCart() {
         let taxable = 0, gst = 0, total = 0;
         document.getElementById('cart-body').innerHTML = cart.map((c, i) => {
-            taxable += c.base; gst += c.gstA; total += c.total;
+            taxable += c.base || (c.rate * c.qty); gst += c.gstA; total += c.total;
             return `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.rate}</td><td>${c.gstP}%</td><td>${c.total.toFixed(2)}</td><td onclick="cart.splice(${i},1);renderCart()" class="btn-del">X</td></tr>`;
         }).join('');
         document.getElementById('tax-amt').innerText = taxable.toFixed(2);
@@ -284,7 +280,7 @@
     };
 
     window.deleteSale = async (id, withPrompt = true) => {
-        if(withPrompt && !confirm("ബില്ല് ഡിലീറ്റ് ചെയ്യണോ?")) return;
+        if(withPrompt && !confirm("Delete this bill?")) return;
         const sDoc = await getDoc(doc(db, "sales", id));
         if(sDoc.exists()) {
             for(let item of sDoc.data().items) {
@@ -315,10 +311,10 @@
     window.processReturn = async () => {
         const id = document.getElementById('ret-item-id').value;
         const qty = parseFloat(document.getElementById('ret-qty').value);
-        if(!id || !qty) return alert("വിവരങ്ങൾ നൽകുക");
+        if(!id || !qty) return alert("Enter Details");
         const it = inv.find(i => i.id === id);
         await updateDoc(doc(db, "inventory", id), { qty: it.qty + qty });
-        alert("Return സക്സസ് ആയി സ്റ്റോക്ക് അപ്ഡേറ്റ് ചെയ്തു");
+        alert("Return Processed & Stock Updated");
         location.reload();
     };
 
@@ -326,8 +322,7 @@
         let val = 0;
         document.getElementById('stock-body').innerHTML = inv.map(i => {
             val += (i.buy * i.qty) || 0;
-            const lowClass = i.qty <= 5 ? 'low-stock' : '';
-            return `<tr><td>${i.name}</td><td class="${lowClass}">${i.qty}</td><td>${i.retail}</td><td><button onclick="deleteItem('${i.id}')" class="btn-del">Del</button></td></tr>`;
+            return `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.retail}</td><td><button onclick="deleteItem('${i.id}')" class="btn-del">Del</button></td></tr>`;
         }).join('');
         if(currentUser === "admin") document.getElementById('ds-stock').innerText = "₹ " + Math.round(val);
     }
@@ -339,25 +334,24 @@
         const wholesale = parseFloat(document.getElementById('i-wholesale').value) || 0;
         const qty = parseFloat(document.getElementById('i-qty').value) || 0;
         if(name) await addDoc(collection(db, "inventory"), { name, buy, retail, wholesale, qty });
-        alert("സേവ് ചെയ്തു!");
+        alert("Saved!");
     };
+
+    window.deleteItem = async (id) => { if(confirm("Delete?")) await deleteDoc(doc(db, "inventory", id)); };
 
     function renderHome() {
         const today = new Date().toLocaleDateString('en-GB');
-        let tSale = 0, tCash = 0, tCred = 0, tProfit = 0;
+        let tSale = 0, tCash = 0, tCred = 0;
         const sorted = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
         sorted.forEach(s => {
             if(s.date === today) {
                 tSale += s.total;
                 if(s.method === 'credit') tCred += s.total; else tCash += s.total;
-                s.items.forEach(item => {
-                    tProfit += (item.base - (item.buyTotal || 0));
-                });
             }
         });
         if(currentUser === "admin") {
             document.getElementById('ds-sale').innerText = "₹ " + tSale;
-            document.getElementById('ds-profit').innerText = "₹ " + Math.round(tProfit);
+            document.getElementById('ds-cash').innerText = "₹ " + tCash;
             document.getElementById('ds-cred').innerText = "₹ " + tCred;
         }
         document.getElementById('recent-list').innerHTML = sorted.slice(0, 10).map(s => `
@@ -391,7 +385,6 @@
         const data = dates.map(d => sales.filter(s => s.date === d).reduce((a, b) => a + b.total, 0));
         myChart = new Chart(ctx, { type: 'line', data: { labels: dates, datasets: [{ label: 'Sales', data: data, borderColor: '#2563eb', fill: true, backgroundColor: 'rgba(37, 99, 235, 0.1)' }] } });
     };
-    window.deleteItem = async (id) => { if(confirm("ഡിലീറ്റ് ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
 </script>
 </body>
 </html>
