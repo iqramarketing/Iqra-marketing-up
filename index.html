@@ -300,17 +300,23 @@
         setTimeout(() => { window.print(); location.reload(); }, 500);
     };
 
+    // പുതുക്കിയ refreshUI ഫങ്ക്ഷൻ
     window.refreshUI = () => {
         const today = new Date().toLocaleDateString('en-GB');
         let sVal = 0, todayS = 0, cred = 0, cash = 0;
+
         document.getElementById('stock-body').innerHTML = inv.map(i => {
-            sVal += (i.buy * i.qty) || 0;
+            sVal += (Number(i.buy) * Number(i.qty)) || 0;
             return `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.retail}</td><td><button class="btn-del" onclick="deleteItem('${i.id}')">Del</button></td></tr>`;
         }).join('');
+
         const sorted = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+        
         document.getElementById('recent-list').innerHTML = sorted.slice(0,10).map(s => {
-            if(s.date === today) todayS += s.total;
-            if(s.method === 'credit') cred += s.total; else cash += s.total;
+            if(s.date === today) todayS += Number(s.total);
+            if(s.method === 'credit') cred += Number(s.total); 
+            else cash += Number(s.total);
+
             return `<div class="card" style="border-left: 5px solid var(--accent);">
                 <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b> <b>₹${s.total}</b></div>
                 <small>${s.date} | ${s.method}</small>
@@ -321,28 +327,41 @@
                 </div>
             </div>`;
         }).join('');
+
         if(currentUser === "admin") {
             document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString('en-IN');
             document.getElementById('ds-sale').innerText = "₹ " + Math.round(todayS).toLocaleString('en-IN');
             document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString('en-IN');
             document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
+            updateChart(); 
         }
     };
 
+    // പുതുക്കിയ filterReports ഫങ്ക്ഷൻ
     window.filterReports = () => {
         const d = document.getElementById('filter-date').value;
         const n = document.getElementById('filter-name').value.toLowerCase();
-        let fDate = d ? new Date(d).toLocaleDateString('en-GB') : "";
-        const filtered = sales.filter(s => (fDate ? s.date === fDate : true) && (n ? s.cust.toLowerCase().includes(n) : true));
+        
+        let fDate = d ? d.split("-").reverse().join("/") : ""; 
+
+        const filtered = sales.filter(s => {
+            const matchesDate = fDate ? s.date === fDate : true;
+            const matchesName = n ? s.cust.toLowerCase().includes(n) : true;
+            return matchesDate && matchesName;
+        });
+
         document.getElementById('filtered-sales-list').innerHTML = filtered.map(s => `
             <div class="card"><div style="display:flex; justify-content:space-between;"><b>${s.cust}</b><b>₹${s.total}</b></div><small>${s.date} | ${s.method}</small></div>
         `).join('');
+
         if(n || d) {
-            let total = filtered.reduce((acc, curr) => acc + curr.total, 0);
+            let total = filtered.reduce((acc, curr) => acc + Number(curr.total), 0);
             document.getElementById('report-summary').style.display = 'block';
             document.getElementById('res-total').innerText = Math.round(total);
             document.getElementById('res-name').innerText = n ? n.toUpperCase() : "Sales Report";
-        } else { document.getElementById('report-summary').style.display = 'none'; }
+        } else { 
+            document.getElementById('report-summary').style.display = 'none'; 
+        }
     };
 
     window.editBill = (id) => {
@@ -394,7 +413,7 @@
             const d = new Date(); d.setDate(d.getDate() - i);
             return d.toLocaleDateString('en-GB');
         }).reverse();
-        const chartData = last7Days.map(date => sales.filter(s => s.date === date).reduce((sum, s) => sum + s.total, 0));
+        const chartData = last7Days.map(date => sales.filter(s => s.date === date).reduce((sum, s) => sum + Number(s.total), 0));
         myChart = new Chart(ctx, { type: 'line', data: { labels: last7Days, datasets: [{ label: 'Sales (₹)', data: chartData, borderColor: '#2563eb', fill: true, backgroundColor: 'rgba(37, 99, 235, 0.1)' }] }, options: { responsive: true, maintainAspectRatio: false } });
     };
 
