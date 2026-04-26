@@ -1,3 +1,13 @@
+<!-- 🔐 LOGIN SCREEN (ADD THIS JUST AFTER <body>) -->
+<div id="login-screen" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#1e293b; display:flex; justify-content:center; align-items:center; z-index:9999;">
+    <div style="background:white; padding:30px; border-radius:15px; width:300px; text-align:center;">
+        <h2>IQRA LOGIN</h2>
+        <input type="text" id="login-user" placeholder="Username">
+        <input type="password" id="login-pass" placeholder="Password">
+        <button class="btn btn-primary" onclick="login()">Login</button>
+        <p id="login-error" style="color:red;"></p>
+    </div>
+</div>
 <!DOCTYPE html>
 <html lang="ml">
 <head>
@@ -154,7 +164,36 @@
             </table>
         </div>
     </div>
+// 🔐 LOGIN SYSTEM
+const USERS = {
+    admin: { username: "nishad305300", password: "nishad305300", role: "admin" },
+    staff: { username: "iqra300", password: "iqra300", role: "staff" }
+};
 
+let currentUser = null;
+
+window.login = () => {
+    const u = document.getElementById("login-user").value;
+    const p = document.getElementById("login-pass").value;
+
+    let user = Object.values(USERS).find(x => x.username === u && x.password === p);
+
+    if(user){
+        currentUser = user;
+        document.getElementById("login-screen").style.display = "none";
+        applyRole();
+    } else {
+        document.getElementById("login-error").innerText = "Invalid login";
+    }
+};
+
+function applyRole(){
+    if(currentUser.role === "staff"){
+        document.getElementById("btn-items").style.display = "none";
+        document.getElementById("btn-report").style.display = "none";
+    }
+}
+    
     <div id="sec-report" style="display:none">
         <div class="card no-print">
             <h3>Search Reports</h3>
