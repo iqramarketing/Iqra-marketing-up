@@ -33,6 +33,7 @@
         .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-primary { background: var(--accent); color: white; }
         .btn-del { background: #fee2e2; color: #ef4444; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .btn-edit { background: #e0f2fe; color: #0369a1; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-right: 5px; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
         th { background: #f1f5f9; padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0; }
@@ -42,8 +43,13 @@
         .search-results { position: absolute; background: white; width: 100%; z-index: 100; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; display: none; }
         .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
         
-        @media print { .no-print { display: none !important; } }
+        @media print { 
+            .no-print { display: none !important; } 
+            .print-only { display: block !important; text-align: center; }
+            .card { box-shadow: none; border: none; }
+        }
         .admin-only { display: none; } 
+        .print-only { display: none; }
     </style>
 </head>
 <body>
@@ -95,7 +101,8 @@
 
         <div id="sec-bill" style="display:none">
             <div class="card no-print">
-                <h3>New Invoice</h3>
+                <h3 id="bill-title">New Invoice</h3>
+                <input type="hidden" id="edit-bill-id">
                 <input type="text" id="cust-name" placeholder="Customer Name">
                 <div class="search-container">
                     <input type="text" id="item-search" placeholder="Search Item..." oninput="filterItems()">
@@ -107,14 +114,25 @@
                     <select id="rate-type"><option value="retail">Retail Rate</option><option value="wholesale">Wholesale</option></select>
                     <input type="number" id="sale-qty" placeholder="Qty">
                 </div>
+                <input type="number" id="sale-gst" placeholder="GST %" value="0">
                 <button class="btn btn-primary" onclick="addToCart()">+ Add to List</button>
             </div>
+
             <div class="card">
+                <div class="print-only">
+                    <h2>IQRA MARKETING</h2>
+                    <p>Karuvanpadi | Ph: 8089305300</p>
+                    <p id="print-bill-meta"></p>
+                </div>
                 <table id="bill-table">
-                    <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th><th class="no-print">X</th></tr></thead>
+                    <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>GST</th><th>Total</th><th class="no-print">X</th></tr></thead>
                     <tbody id="cart-body"></tbody>
                 </table>
-                <h2 style="text-align:right; color:var(--accent)">Total: ₹ <span id="cart-total">0</span></h2>
+                <div style="text-align: right; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                    <p>Taxable Amt: ₹ <span id="tax-amt">0.00</span></p>
+                    <p>GST Amount: ₹ <span id="gst-amt">0.00</span></p>
+                    <h2 style="color:var(--accent)">Grand Total: ₹ <span id="cart-total">0</span></h2>
+                </div>
                 <div class="no-print">
                     <select id="pay-method"><option value="cash">Cash</option><option value="gpay">G-Pay</option><option value="credit">Credit</option></select>
                     <button class="btn btn-primary" style="background:var(--success)" onclick="finishBill()">Save & Print</button>
@@ -175,8 +193,9 @@
 
     let inv = [], sales = [], cart = [], myChart = null;
     let currentUser = ""; 
+    const ADMIN_PW = "nishad305300";
 
-    // --- നിർബന്ധമായും ലോഗിൻ പേജ് കാണിക്കാൻ ---
+    // --- LOGIN ---
     window.onload = () => {
         document.getElementById('login-screen').style.display = 'flex';
         document.getElementById('main-content').style.display = 'none';
@@ -186,14 +205,14 @@
         const pass = document.getElementById('login-pass').value;
         const err = document.getElementById('login-err');
         
-        if(pass === "nishad305300") {
+        if(pass === ADMIN_PW) {
             currentUser = "admin";
             loginSuccess();
         } else if(pass === "iqra300") {
             currentUser = "staff";
             loginSuccess();
         } else {
-            err.innerText = "തെറ്റായ പാസ്‌വേഡ്! വീണ്ടും ശ്രമിക്കുക.";
+            err.innerText = "തെറ്റായ പാസ്‌വേഡ്!";
             document.getElementById('login-pass').value = "";
         }
     };
@@ -203,14 +222,12 @@
         document.getElementById('main-content').style.display = 'block';
         document.getElementById('user-label').innerText = "User: " + currentUser.toUpperCase();
         
-        // റോൾ അനുസരിച്ച് കാഴ്ചകൾ ക്രമീകരിക്കുന്നു
         const adminElements = document.querySelectorAll('.admin-only');
         if(currentUser === "staff") {
             adminElements.forEach(el => el.style.setProperty('display', 'none', 'important'));
         } else {
             adminElements.forEach(el => el.style.setProperty('display', 'block', 'important'));
         }
-        
         tab('home');
         updateChart();
     }
@@ -220,10 +237,8 @@
     onSnapshot(collection(db, "sales"), (s) => { sales = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
 
     window.tab = (id) => {
-        // സ്റ്റാഫ് ആണെങ്കിൽ അഡ്മിൻ പേജുകൾ ബ്ലോക്ക് ചെയ്യുക
         if(currentUser === "staff" && (id === 'items' || id === 'report')) {
-            alert("നിങ്ങൾക്ക് ഈ പേജ് കാണാൻ അനുവാദമില്ല!");
-            return;
+            alert("Permission Denied!"); return;
         }
         document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -232,7 +247,7 @@
         if(id === 'home' && currentUser === "admin") updateChart();
     };
 
-    // --- BILLING LOGIC ---
+    // --- BILLING ---
     window.filterItems = () => {
         const txt = document.getElementById('item-search').value.toLowerCase();
         const resDiv = document.getElementById('search-results');
@@ -253,11 +268,17 @@
     window.addToCart = () => {
         const id = document.getElementById('selected-item-id').value;
         const qty = parseFloat(document.getElementById('sale-qty').value);
+        const gstP = parseFloat(document.getElementById('sale-gst').value) || 0;
         if(!id || !qty) return alert("Select Item & Qty");
+        
         const it = inv.find(i => i.id === id);
-        if(qty > it.qty) return alert("സ്റ്റോക്ക് കുറവാണ്!");
+        if(qty > it.qty) return alert("Insufficient Stock!");
+        
         const rate = document.getElementById('rate-type').value === 'retail' ? it.retail : (it.wholesale || it.retail);
-        cart.push({ invId: id, name: it.name, qty, rate, total: rate * qty });
+        const base = rate * qty;
+        const gstA = (base * gstP) / 100;
+        
+        cart.push({ invId: id, name: it.name, qty, rate, base, gstA, gstP, total: base + gstA });
         updateCartUI();
         document.getElementById('item-search').value = '';
         document.getElementById('sale-qty').value = '';
@@ -265,16 +286,19 @@
     };
 
     window.updateCartUI = () => {
-        let grand = 0;
+        let tax = 0, gst = 0, grand = 0;
         document.getElementById('cart-body').innerHTML = cart.map((c, i) => {
-            grand += c.total;
-            return `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.rate}</td><td>${c.total}</td><td><button onclick="cart.splice(${i},1);updateCartUI()" class="btn-del">X</button></td></tr>`;
+            tax += c.base; gst += c.gstA; grand += c.total;
+            return `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.rate}</td><td>${c.gstP}%</td><td>${c.total.toFixed(2)}</td><td class="no-print"><button onclick="cart.splice(${i},1);updateCartUI()" class="btn-del">X</button></td></tr>`;
         }).join('');
+        document.getElementById('tax-amt').innerText = tax.toFixed(2);
+        document.getElementById('gst-amt').innerText = gst.toFixed(2);
         document.getElementById('cart-total').innerText = Math.round(grand);
     };
 
     window.finishBill = async () => {
         if(cart.length === 0) return;
+        const editId = document.getElementById('edit-bill-id').value;
         const now = new Date();
         const saleData = {
             cust: document.getElementById('cust-name').value || "Cash Sale",
@@ -282,20 +306,81 @@
             method: document.getElementById('pay-method').value,
             items: cart,
             date: now.toLocaleDateString('en-GB'),
+            time: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
             timestamp: serverTimestamp()
         };
+
+        if(editId) await deleteSale(editId, false); // Edit മോഡിൽ പഴയ ബില്ല് താൽക്കാലികമായി നീക്കുന്നു
+        
         await addDoc(collection(db, "sales"), saleData);
         for(let c of cart) {
             const it = inv.find(i => i.id === c.invId);
             if(it) await updateDoc(doc(db, "inventory", c.invId), { qty: it.qty - c.qty });
         }
-        window.print();
-        cart = [];
-        updateCartUI();
-        document.getElementById('cust-name').value = '';
+        
+        document.getElementById('print-bill-meta').innerText = `Cust: ${saleData.cust} | Date: ${saleData.date}`;
+        setTimeout(() => { window.print(); location.reload(); }, 500);
     };
 
-    // --- STOCK LOGIC ---
+    // --- REFRESH UI ---
+    window.refreshUI = () => {
+        const today = new Date().toLocaleDateString('en-GB');
+        let sVal = 0, todayS = 0, cred = 0, cash = 0;
+
+        document.getElementById('stock-body').innerHTML = inv.map(i => {
+            sVal += (i.buy * i.qty) || 0;
+            return `<tr><td>${i.name}</td><td>${i.qty}</td><td><button class="btn-del" onclick="deleteItem('${i.id}')">Del</button></td></tr>`;
+        }).join('');
+
+        const sorted = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+        document.getElementById('recent-list').innerHTML = sorted.slice(0,10).map(s => {
+            if(s.date === today) todayS += s.total;
+            if(s.method === 'credit') cred += s.total; else cash += s.total;
+            return `<div class="card" style="border-left: 5px solid var(--accent);">
+                <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b> <b>₹${s.total}</b></div>
+                <small>${s.date} | ${s.method}</small>
+                <div class="no-print" style="margin-top:10px;">
+                    <button class="btn-edit" onclick="editBill('${s.id}')">Edit</button>
+                    <button class="btn-del" onclick="deleteSale('${s.id}')">Del</button>
+                </div>
+            </div>`;
+        }).join('');
+
+        if(currentUser === "admin") {
+            document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString('en-IN');
+            document.getElementById('ds-sale').innerText = "₹ " + Math.round(todayS).toLocaleString('en-IN');
+            document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString('en-IN');
+            document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
+        }
+    };
+
+    window.editBill = (id) => {
+        const s = sales.find(x => x.id === id);
+        if(!s) return;
+        tab('bill');
+        document.getElementById('edit-bill-id').value = id;
+        document.getElementById('cust-name').value = s.cust;
+        document.getElementById('pay-method').value = s.method;
+        cart = [...s.items];
+        updateCartUI();
+        document.getElementById('bill-title').innerText = "Edit Invoice";
+    };
+
+    window.deleteSale = async (id, withPrompt = true) => {
+        if(withPrompt) {
+            if (currentUser !== "admin") return alert("Admin Only!");
+            if(!confirm("ഈ ബില്ല് ഡിലീറ്റ് ചെയ്യണോ?")) return;
+        }
+        const sDoc = await getDoc(doc(db, "sales", id));
+        if(!sDoc.exists()) return;
+        const sData = sDoc.data();
+        for(let item of sData.items) {
+            const it = inv.find(i => i.id === item.invId);
+            if(it) await updateDoc(doc(db, "inventory", item.invId), { qty: it.qty + item.qty });
+        }
+        await deleteDoc(doc(db, "sales", id));
+    };
+
     window.saveItem = async () => {
         const name = document.getElementById('i-name').value;
         const buy = parseFloat(document.getElementById('i-buy').value) || 0;
@@ -304,33 +389,7 @@
         const wholesale = parseFloat(document.getElementById('i-wholesale').value) || 0;
         if(!name) return;
         await addDoc(collection(db, "inventory"), { name, buy, qty, retail, wholesale });
-        alert("സേവ് ചെയ്തു!");
-        document.getElementById('i-name').value = '';
-        document.getElementById('i-buy').value = '';
-        document.getElementById('i-qty').value = '';
-        document.getElementById('i-retail').value = '';
-        document.getElementById('i-wholesale').value = '';
-    };
-
-    // --- UI REFRESH ---
-    window.refreshUI = () => {
-        const today = new Date().toLocaleDateString('en-GB');
-        let sVal = 0, todayS = 0;
-
-        document.getElementById('stock-body').innerHTML = inv.map(i => {
-            sVal += (i.buy * i.qty);
-            return `<tr><td>${i.name}</td><td>${i.qty}</td><td><button class="btn-del" onclick="deleteItem('${i.id}')">Del</button></td></tr>`;
-        }).join('');
-
-        document.getElementById('recent-list').innerHTML = sales.slice(-10).reverse().map(s => {
-            if(s.date === today) todayS += s.total;
-            return `<div class="card"><b>${s.cust}</b>: ₹${s.total} <br><small>${s.date} | ${s.method}</small></div>`;
-        }).join('');
-
-        if(currentUser === "admin") {
-            document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal);
-            document.getElementById('ds-sale').innerText = "₹ " + Math.round(todayS);
-        }
+        alert("Saved!");
     };
 
     window.updateChart = () => {
@@ -338,18 +397,11 @@
         const ctx = document.getElementById('salesChart')?.getContext('2d');
         if(!ctx) return;
         if(myChart) myChart.destroy();
-        
-        // ഇവിടെ നമുക്ക് ഡാറ്റാബേസിൽ നിന്നുള്ള സെയിൽസ് ഡാറ്റ ഗ്രാഫിൽ കാണിക്കാം
         const last7Days = [...Array(7)].map((_, i) => {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
+            const d = new Date(); d.setDate(d.getDate() - i);
             return d.toLocaleDateString('en-GB');
         }).reverse();
-
-        const chartData = last7Days.map(date => {
-            return sales.filter(s => s.date === date).reduce((sum, s) => sum + s.total, 0);
-        });
-
+        const chartData = last7Days.map(date => sales.filter(s => s.date === date).reduce((sum, s) => sum + s.total, 0));
         myChart = new Chart(ctx, {
             type: 'line',
             data: { labels: last7Days, datasets: [{ label: 'Sales (₹)', data: chartData, borderColor: '#2563eb', fill: true, backgroundColor: 'rgba(37, 99, 235, 0.1)' }] },
@@ -357,7 +409,7 @@
         });
     };
 
-    window.deleteItem = async (id) => { if(confirm("ഇത് ഡിലീറ്റ് ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
+    window.deleteItem = async (id) => { if(confirm("Delete Item?")) await deleteDoc(doc(db, "inventory", id)); };
 </script>
 </body>
 </html>
