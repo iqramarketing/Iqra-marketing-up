@@ -95,6 +95,7 @@
             <div class="search-container">
                 <input type="text" id="cust-name" placeholder="Customer Name" oninput="filterCustomers()">
                 <div id="cust-results" class="search-results"></div>
+                <span id="cust-balance" style="color: var(--danger); font-weight: bold; font-size: 0.9rem; display: block; margin-top: 5px;"></span>
             </div>
             <div class="search-container">
                 <input type="text" id="item-search" placeholder="Search Item..." oninput="filterItems()">
@@ -220,7 +221,6 @@
     let inv = [], sales = [], cart = [], myChart = null;
     const ADMIN_PW = "305300";
 
-    // Real-time Data Sync
     onSnapshot(collection(db, "inventory"), (s) => { inv = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
     onSnapshot(collection(db, "sales"), (s) => { sales = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
 
@@ -232,52 +232,46 @@
         if(id === 'home') updateChart();
     };
 
-    window.updateChart = () => {
-        const chartElem = document.getElementById('salesChart');
-        if(!chartElem) return;
-        const ctx = chartElem.getContext('2d');
-        const last7Days = [...Array(7)].map((_, i) => {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
-        }).reverse();
-        const dailyTotals = last7Days.map(date => {
-            return sales.filter(s => s.date === date).reduce((sum, s) => sum + s.total, 0);
-        });
-        if (myChart) myChart.destroy();
-        myChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: last7Days.map(d => d.split('/')[0] + '/' + d.split('/')[1]),
-                datasets: [{
-                    label: 'Sales (₹)',
-                    data: dailyTotals,
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true } },
-                plugins: { legend: { display: false } }
-            }
-        });
-    };
-
+    // --- കസ്റ്റമർ സെർച്ച് വിത്ത് ബാലൻസ് ---
     window.filterCustomers = () => {
         const txt = document.getElementById('cust-name').value.toLowerCase();
         const resDiv = document.getElementById('cust-results');
-        if(!txt) { resDiv.style.display = 'none'; return; }
+        const balDiv = document.getElementById('cust-balance');
+
+        if(!txt) { 
+            resDiv.style.display = 'none'; 
+            balDiv.innerText = '';
+            return; 
+        }
+
         const uniqueCusts = [...new Set(sales.map(s => s.cust))];
         const filtered = uniqueCusts.filter(c => c.toLowerCase().includes(txt));
-        resDiv.innerHTML = filtered.map(name => `<div class="search-item" onclick="document.getElementById('cust-name').value='${name}';document.getElementById('cust-results').style.display='none'">${name}</div>`).join('');
+
+        resDiv.innerHTML = filtered.map(name => {
+            const customerBal = sales
+                .filter(s => s.cust === name)
+                .reduce((sum, s) => sum + s.total, 0);
+            
+            return `<div class="search-item" onclick="selectCustomer('${name}', ${customerBal})">
+                ${name} <span style="float:right; color:red;">Bal: ₹${Math.round(customerBal)}</span>
+            </div>`;
+        }).join('');
+
         resDiv.style.display = filtered.length ? 'block' : 'none';
     };
 
+    window.selectCustomer = (name, balance) => {
+        document.getElementById('cust-name').value = name;
+        document.getElementById('cust-results').style.display = 'none';
+        
+        if(balance !== 0) {
+            document.getElementById('cust-balance').innerText = "Old Balance: ₹ " + Math.round(balance);
+        } else {
+            document.getElementById('cust-balance').innerText = "No Pending Balance";
+        }
+    };
+
+    // --- സ്റ്റോക്ക് ഐറ്റം സെർച്ച് ---
     window.filterItems = () => {
         const txt = document.getElementById('item-search').value.toLowerCase();
         const resDiv = document.getElementById('search-results');
@@ -331,22 +325,11 @@
         document.getElementById('stock-hint').innerText='';
     };
 
-    // --- അപ്‌ഡേറ്റ് ചെയ്ത UI ഫംഗ്ഷൻ (Sl No ചേർത്തു) ---
     window.updateCartUI = () => {
         let tax = 0, gst = 0, grand = 0;
         document.getElementById('cart-body').innerHTML = cart.map((c, i) => {
             tax += c.base; gst += c.gstA; grand += c.total;
-            return `<tr>
-                <td>${i + 1}</td>
-                <td>${c.name}</td>
-                <td>${c.qty}</td>
-                <td>${c.rate}</td>
-                <td>${c.gstP}%</td>
-                <td>${c.total.toFixed(2)}</td>
-                <td class="no-print">
-                    <button onclick="cart.splice(${i},1);updateCartUI()" class="btn-del">X</button>
-                </td>
-            </tr>`;
+            return `<tr><td>${i + 1}</td><td>${c.name}</td><td>${c.qty}</td><td>${c.rate}</td><td>${c.gstP}%</td><td>${c.total.toFixed(2)}</td><td class="no-print"><button onclick="cart.splice(${i},1);updateCartUI()" class="btn-del">X</button></td></tr>`;
         }).join('');
         document.getElementById('tax-amt').innerText = tax.toFixed(2);
         document.getElementById('gst-amt').innerText = gst.toFixed(2);
@@ -402,9 +385,63 @@
         document.getElementById('ds-sale').innerText = "₹ " + Math.round(todayS).toLocaleString('en-IN');
         document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString('en-IN');
         document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
-        updateChart();
+        if(window.updateChart) updateChart();
     };
 
+    window.updateChart = () => {
+        const chartElem = document.getElementById('salesChart');
+        if(!chartElem) return;
+        const ctx = chartElem.getContext('2d');
+        const last7Days = [...Array(7)].map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
+        }).reverse();
+        const dailyTotals = last7Days.map(date => {
+            return sales.filter(s => s.date === date).reduce((sum, s) => sum + s.total, 0);
+        });
+        if (myChart) myChart.destroy();
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: last7Days.map(d => d.split('/')[0] + '/' + d.split('/')[1]),
+                datasets: [{
+                    label: 'Sales (₹)',
+                    data: dailyTotals,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    };
+
+    window.deleteItem = async (id) => { if(confirm("Delete Item?")) await deleteDoc(doc(db, "inventory", id)); };
+    
+    window.deleteSale = async (id, withPrompt = true) => {
+        if(withPrompt) {
+            if (prompt("Password?") !== ADMIN_PW) return alert("Wrong!");
+            if(!confirm("Delete this bill?")) return;
+        }
+        const sDoc = await getDoc(doc(db, "sales", id));
+        if(!sDoc.exists()) return;
+        const sData = sDoc.data();
+        for(let item of sData.items) {
+            const it = inv.find(i => i.id === (item.invId || ""));
+            if(it) await updateDoc(doc(db, "inventory", item.invId), { qty: it.qty + item.qty });
+        }
+        await deleteDoc(doc(db, "sales", id));
+    };
+
+    // മറ്റു ഫംഗ്ഷനുകൾ (റിപ്പോർട്ട്, റിട്ടേൺ) മാറ്റമില്ലാതെ തുടരുന്നു...
     window.filterReports = () => {
         const d = document.getElementById('filter-date').value;
         const n = document.getElementById('filter-name').value.toLowerCase();
@@ -457,27 +494,6 @@
         setTimeout(() => { window.print(); location.reload(); }, 500);
     };
 
-    window.deleteItem = async (id) => { if(confirm("Delete Item?")) await deleteDoc(doc(db, "inventory", id)); };
-    
-    window.deleteSale = async (id, withPrompt = true) => {
-        if(withPrompt) {
-            if (prompt("Password?") !== ADMIN_PW) return alert("Wrong!");
-            if(!confirm("Delete this bill?")) return;
-        }
-        const sDoc = await getDoc(doc(db, "sales", id));
-        if(!sDoc.exists()) return;
-        const sData = sDoc.data();
-        for(let item of sData.items) {
-            const it = inv.find(i => i.id === item.invId);
-            if(it) await updateDoc(doc(db, "inventory", item.invId), { qty: it.qty + item.qty });
-        }
-        await deleteDoc(doc(db, "sales", id));
-    };
-
-    document.addEventListener('click', (e) => {
-        if(!e.target.closest('.search-container')) document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none');
-    });
-
     window.filterReturnCustomers = () => {
         const txt = document.getElementById('ret-cust').value.toLowerCase();
         const resDiv = document.getElementById('ret-cust-results');
@@ -526,6 +542,10 @@
             location.reload(); 
         } catch (error) { alert("പിശക് സംഭവിച്ചു!"); }
     };
+
+    document.addEventListener('click', (e) => {
+        if(!e.target.closest('.search-container')) document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none');
+    });
 </script>
 </body>
 </html>
