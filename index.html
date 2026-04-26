@@ -174,7 +174,10 @@
     <div id="sec-return" style="display:none">
         <div class="card">
             <h3>Sales Return (സാധനം തിരികെ എടുക്കൽ)</h3>
-            <input type="text" id="ret-cust" placeholder="Customer Name">
+            <div class="search-container">
+                <input type="text" id="ret-cust" placeholder="Search Customer..." oninput="filterReturnCustomers()">
+                <div id="ret-cust-results" class="search-results"></div>
+            </div>
             <div class="search-container">
                 <input type="text" id="ret-item-search" placeholder="Search Item..." oninput="filterReturnItems()">
                 <div id="ret-search-results" class="search-results"></div>
@@ -477,64 +480,76 @@
 
     document.addEventListener('click', (e) => {
         if(!e.target.closest('.search-container')) document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none');
-    });// --- RETURN LOGIC ---
-window.filterReturnItems = () => {
-    const txt = document.getElementById('ret-item-search').value.toLowerCase();
-    const resDiv = document.getElementById('ret-search-results');
-    if(!txt) { resDiv.style.display = 'none'; return; }
-    const filtered = inv.filter(i => i.name.toLowerCase().includes(txt));
-    resDiv.innerHTML = filtered.map(it => `<div class="search-item" onclick="selectReturnItem('${it.id}', '${it.name}')">${it.name}</div>`).join('');
-    resDiv.style.display = 'block';
-};
+    });
 
-window.selectReturnItem = (id, name) => {
-    document.getElementById('ret-item-search').value = name;
-    document.getElementById('ret-selected-id').value = id;
-    document.getElementById('ret-search-results').style.display = 'none';
-};
+    // --- NEW RETURN LOGIC WITH CUSTOMER SEARCH ---
+    window.filterReturnCustomers = () => {
+        const txt = document.getElementById('ret-cust').value.toLowerCase();
+        const resDiv = document.getElementById('ret-cust-results');
+        if(!txt) { resDiv.style.display = 'none'; return; }
+        const uniqueCusts = [...new Set(sales.map(s => s.cust))];
+        const filtered = uniqueCusts.filter(c => c.toLowerCase().includes(txt));
+        resDiv.innerHTML = filtered.map(name => `<div class="search-item" onclick="document.getElementById('ret-cust').value='${name}';document.getElementById('ret-cust-results').style.display='none'">${name}</div>`).join('');
+        resDiv.style.display = filtered.length ? 'block' : 'none';
+    };
 
-window.processReturn = async () => {
-    const cust = document.getElementById('ret-cust').value.trim();
-    const itemId = document.getElementById('ret-selected-id').value;
-    const qty = parseFloat(document.getElementById('ret-qty').value);
-    const rate = parseFloat(document.getElementById('ret-rate').value);
-    const method = document.getElementById('ret-method').value;
+    window.filterReturnItems = () => {
+        const txt = document.getElementById('ret-item-search').value.toLowerCase();
+        const resDiv = document.getElementById('ret-search-results');
+        if(!txt) { resDiv.style.display = 'none'; return; }
+        const filtered = inv.filter(i => i.name.toLowerCase().includes(txt));
+        resDiv.innerHTML = filtered.map(it => `<div class="search-item" onclick="selectReturnItem('${it.id}', '${it.name}')">${it.name}</div>`).join('');
+        resDiv.style.display = 'block';
+    };
 
-    if (!cust || !itemId || !qty || !rate) {
-        return alert("എല്ലാ വിവരങ്ങളും പൂരിപ്പിക്കുക (Fill all fields)");
-    }
+    window.selectReturnItem = (id, name) => {
+        document.getElementById('ret-item-search').value = name;
+        document.getElementById('ret-selected-id').value = id;
+        document.getElementById('ret-search-results').style.display = 'none';
+    };
 
-    const totalRefund = qty * rate;
-    const now = new Date();
+    window.processReturn = async () => {
+        const cust = document.getElementById('ret-cust').value.trim();
+        const itemId = document.getElementById('ret-selected-id').value;
+        const qty = parseFloat(document.getElementById('ret-qty').value);
+        const rate = parseFloat(document.getElementById('ret-rate').value);
+        const method = document.getElementById('ret-method').value;
 
-    try {
-        // 1. സെയിൽസ് ലിസ്റ്റിൽ ഒരു മൈനസ് എൻട്രി ചേർക്കുന്നു (അപ്പോഴേ റിപ്പോർട്ടിൽ കുറയൂ)
-        await addDoc(collection(db, "sales"), {
-            cust: cust + " (Return)",
-            total: -totalRefund, // തുക മൈനസ് ആയി നൽകുന്നു
-            method: method,
-            items: [{ name: "Return: " + document.getElementById('ret-item-search').value, qty: qty, total: -totalRefund }],
-            date: now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear(),
-            timestamp: serverTimestamp(),
-            isReturn: true
-        });
-
-        // 2. ഇൻവെന്ററിയിൽ സ്റ്റോക്ക് തിരികെ കൂട്ടുന്നു
-        const it = inv.find(i => i.id === itemId);
-        if (it) {
-            const newQty = (parseFloat(it.qty) || 0) + qty;
-            await updateDoc(doc(db, "inventory", itemId), { qty: newQty });
+        if (!cust || !itemId || !qty || !rate) {
+            return alert("എല്ലാ വിവരങ്ങളും പൂരിപ്പിക്കുക (Fill all fields)");
         }
 
-        alert("റിട്ടേൺ വിജയകരമായി പൂർത്തിയായി. സ്റ്റോക്ക് പുതുക്കി!");
-        location.reload(); // പേജ് റിഫ്രഷ് ചെയ്യുന്നു
+        const totalRefund = qty * rate;
+        const now = new Date();
 
-    } catch (error) {
-        console.error("Error processing return:", error);
-        alert("പിശക് സംഭവിച്ചു!");
-    }
-};
+        try {
+            // സെയിൽസിൽ മൈനസ് എൻട്രി ചേർക്കുന്നു
+            await addDoc(collection(db, "sales"), {
+                cust: cust, 
+                total: -totalRefund,
+                method: method,
+                items: [{ name: "Return: " + document.getElementById('ret-item-search').value, qty: qty, total: -totalRefund }],
+                date: now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear(),
+                time: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                timestamp: serverTimestamp(),
+                isReturn: true
+            });
 
+            // ഇൻവെന്ററിയിൽ സ്റ്റോക്ക് കൂട്ടുന്നു
+            const it = inv.find(i => i.id === itemId);
+            if (it) {
+                const currentQty = Number(it.qty) || 0;
+                await updateDoc(doc(db, "inventory", itemId), { qty: currentQty + qty });
+            }
+
+            alert("റിട്ടേൺ വിജയകരമായി പൂർത്തിയായി!");
+            location.reload(); 
+
+        } catch (error) {
+            console.error("Error:", error);
+            alert("പിശക് സംഭവിച്ചു!");
+        }
+    };
 </script>
 </body>
 </html>
