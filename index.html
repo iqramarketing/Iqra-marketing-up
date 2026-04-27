@@ -20,8 +20,8 @@
         .shop-info h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
         .shop-info p { margin: 2px 0; font-size: 0.85rem; opacity: 0.9; }
 
-        .nav-bar { display: grid; grid-template-columns: repeat(5, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .nav-btn { border: none; background: none; padding: 15px 5px; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; font-size: 0.8rem; }
+        .nav-bar { display: grid; grid-template-columns: repeat(6, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .nav-btn { border: none; background: none; padding: 15px 5px; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; font-size: 0.75rem; }
         .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); background: #f1f5f9; }
 
         .container { padding: 15px; max-width: 900px; margin: 0 auto; }
@@ -37,7 +37,6 @@
         .btn-del { background: #fee2e2; color: #ef4444; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
         .btn-edit { background: #e0f2fe; color: #0369a1; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-right: 5px; }
 
-        /* Admin helper */
         .admin-only { display: none; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
@@ -84,6 +83,7 @@
         <button class="nav-btn" id="btn-items" onclick="tab('items')">Stock</button>
         <button class="nav-btn admin-only" id="btn-report" onclick="tab('report')">Reports</button>
         <button class="nav-btn" id="btn-return" onclick="tab('return')">Return</button>
+        <button class="nav-btn" id="btn-collection" onclick="tab('collection')">Collection</button>
     </nav>
 
     <div class="container">
@@ -94,12 +94,10 @@
                 <div class="stat-box red"><h6>Total Credit</h6><h3 id="ds-cred">₹ 0</h3></div>
                 <div class="stat-box purple"><h6>Cash/G-Pay</h6><h3 id="ds-cash">₹ 0</h3></div>
             </div>
-
             <div class="card no-print admin-only">
                 <h3>Sales Analytics (7 Days)</h3>
                 <canvas id="salesChart" style="width:100%; max-height:300px;"></canvas>
             </div>
-
             <h4>Recent Transactions</h4>
             <div id="recent-list"></div>
         </div>
@@ -136,12 +134,7 @@
                 <table id="bill-table">
                     <thead>
                         <tr>
-                            <th>Sl</th> <th>Item</th>
-                            <th>Qty</th>
-                            <th>Rate</th>
-                            <th>GST</th>
-                            <th>Total</th>
-                            <th class="no-print">X</th>
+                            <th>Sl</th> <th>Item</th> <th>Qty</th> <th>Rate</th> <th>GST</th> <th>Total</th> <th class="no-print">X</th>
                         </tr>
                     </thead>
                     <tbody id="cart-body"></tbody>
@@ -220,6 +213,24 @@
                 <button class="btn btn-primary" style="background:var(--danger)" onclick="processReturn()">Confirm Return</button>
             </div>
         </div>
+
+        <div id="sec-collection" style="display:none">
+            <div class="card">
+                <h3>Credit Collection (കടം വാങ്ങിയ പൈസ വാങ്ങൽ)</h3>
+                <div class="search-container">
+                    <input type="text" id="coll-cust" placeholder="Search Customer..." oninput="filterCollectionCustomers()">
+                    <div id="coll-cust-results" class="search-results"></div>
+                    <span id="coll-balance" style="color: var(--danger); font-weight: bold; font-size: 1rem; display: block; margin-top: 5px;"></span>
+                </div>
+                <input type="number" id="coll-amount" placeholder="Amount Received (വാങ്ങിയ തുക)">
+                <select id="coll-method">
+                    <option value="cash">Cash</option>
+                    <option value="gpay">G-Pay</option>
+                </select>
+                <button class="btn btn-primary" style="background:var(--success)" onclick="processCollection()">Save Collection</button>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -234,28 +245,18 @@
     let inv = [], sales = [], cart = [], myChart = null;
     let currentUser = ""; 
 
-    // --- Login Logic ---
     window.checkLogin = () => {
         const pass = document.getElementById('pass-input').value;
-        if (pass === "Nishad305300") {
-            currentUser = "admin";
-            loginSuccess();
-        } else if (pass === "iqra300") {
-            currentUser = "staff";
-            loginSuccess();
-        } else {
-            alert("പാസ്‌വേഡ് തെറ്റാണ്!");
-        }
+        if (pass === "Nishad305300") { currentUser = "admin"; loginSuccess(); }
+        else if (pass === "iqra300") { currentUser = "staff"; loginSuccess(); }
+        else { alert("പാസ്‌വേഡ് തെറ്റാണ്!"); }
     };
 
     function loginSuccess() {
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
-        if (currentUser === "admin") {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-        } else {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-        }
+        if (currentUser === "admin") { document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block'); }
+        else { document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none'); }
         refreshUI();
     }
 
@@ -283,12 +284,12 @@
         }).join('');
 
         const sorted = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-        document.getElementById('recent-list').innerHTML = sorted.slice(0,10).map(s => {
+        document.getElementById('recent-list').innerHTML = sorted.slice(0,15).map(s => {
             if(s.date === today) todayS += s.total;
             if(s.method === 'credit') cred += s.total; else cash += s.total;
-            return `<div class="card" style="border-left: 5px solid ${s.total < 0 ? 'red' : 'var(--accent)'};">
+            return `<div class="card" style="border-left: 5px solid ${s.total < 0 ? (s.isCollection ? 'var(--success)' : 'red') : 'var(--accent)'};">
                 <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b> <b>₹${s.total}</b></div>
-                <small>${s.date} | ${s.method}</small>
+                <small>${s.date} | ${s.method} ${s.isCollection ? '(Collection)' : ''}</small>
                 <div class="no-print" style="margin-top:10px;">
                     <button class="btn-edit" onclick="editBill('${s.id}')">Edit</button>
                     <button class="btn-edit" onclick="reprintBill('${s.id}')">Print</button>
@@ -306,7 +307,7 @@
         }
     };
 
-    // --- Enhanced Customer Search ---
+    // --- Customer Search ---
     window.filterCustomers = () => {
         const txt = document.getElementById('cust-name').value.toLowerCase();
         const resDiv = document.getElementById('cust-results');
@@ -327,7 +328,7 @@
         document.getElementById('cust-balance').innerText = balance !== 0 ? "Old Balance: ₹ " + Math.round(balance) : "No Pending Balance";
     };
 
-    // --- Stock Items Search ---
+    // --- Item Search ---
     window.filterItems = () => {
         const txt = document.getElementById('item-search').value.toLowerCase();
         const resDiv = document.getElementById('search-results');
@@ -345,6 +346,7 @@
         document.getElementById('search-results').style.display = 'none';
     };
 
+    // --- Stock Logic ---
     window.saveItem = async () => {
         const name = document.getElementById('i-name').value.trim();
         const buy = parseFloat(document.getElementById('i-buy').value) || 0;
@@ -364,6 +366,7 @@
         ['i-name', 'i-buy', 'i-qty', 'i-retail', 'i-wholesale'].forEach(id => document.getElementById(id).value = '');
     };
 
+    // --- Cart & Billing Logic ---
     window.addToCart = () => {
         const id = document.getElementById('selected-item-id').value;
         const qty = parseFloat(document.getElementById('sale-qty').value);
@@ -412,7 +415,6 @@
         setTimeout(() => { window.print(); location.reload(); }, 500);
     };
 
-    // --- Reprint Feature ---
     window.reprintBill = (id) => {
         const s = sales.find(x => x.id === id);
         if(!s) return;
@@ -425,51 +427,19 @@
 
     window.deleteSale = async (id, withPrompt = true) => {
         if(currentUser !== 'admin') return alert("അഡ്മിന് മാത്രമേ ഡിലീറ്റ് ചെയ്യാൻ കഴിയൂ!");
-        if(withPrompt && !confirm("ഈ ബില്ല് ഡിലീറ്റ് ചെയ്യണോ?")) return;
+        if(withPrompt && !confirm("ഈ എൻട്രി ഡിലീറ്റ് ചെയ്യണോ?")) return;
         const sDoc = await getDoc(doc(db, "sales", id));
         if(!sDoc.exists()) return;
         const sData = sDoc.data();
-        for(let item of sData.items) {
-            const it = inv.find(i => i.id === (item.invId || ""));
-            if(it) await updateDoc(doc(db, "inventory", item.invId), { qty: it.qty + item.qty });
+        if(!sData.isCollection) {
+            for(let item of sData.items) {
+                const it = inv.find(i => i.id === (item.invId || ""));
+                if(it) await updateDoc(doc(db, "inventory", item.invId), { qty: it.qty + item.qty });
+            }
         }
         await deleteDoc(doc(db, "sales", id));
     };
 
-    window.updateChart = () => {
-        const chartElem = document.getElementById('salesChart');
-        if(!chartElem) return;
-        const ctx = chartElem.getContext('2d');
-        const last7Days = [...Array(7)].map((_, i) => {
-            const d = new Date(); d.setDate(d.getDate() - i);
-            return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
-        }).reverse();
-        const dailyTotals = last7Days.map(date => sales.filter(s => s.date === date).reduce((sum, s) => sum + s.total, 0));
-        if (myChart) myChart.destroy();
-        myChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: last7Days.map(d => d.split('/')[0] + '/' + d.split('/')[1]),
-                datasets: [{ label: 'Sales (₹)', data: dailyTotals, borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', borderWidth: 3, fill: true, tension: 0.4 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
-        });
-    };
-
-    window.editBill = (id) => {
-        const s = sales.find(x => x.id === id);
-        if(!s) return;
-        tab('bill');
-        document.getElementById('edit-bill-id').value = id;
-        document.getElementById('cust-name').value = s.cust;
-        document.getElementById('pay-method').value = s.method;
-        cart = [...s.items];
-        updateCartUI();
-        document.getElementById('bill-title').innerText = "Edit Invoice";
-    };
-
-    window.deleteItem = async (id) => { if(confirm("Item ഡിലീറ്റ് ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
-    
     // --- Return Logic ---
     window.filterReturnCustomers = () => {
         const txt = document.getElementById('ret-cust').value.toLowerCase();
@@ -518,36 +488,99 @@
         location.reload(); 
     };
 
+    // --- COLLECTION LOGIC (NEW) ---
+    window.filterCollectionCustomers = () => {
+        const txt = document.getElementById('coll-cust').value.toLowerCase();
+        const resDiv = document.getElementById('coll-cust-results');
+        const balDiv = document.getElementById('coll-balance');
+        if(!txt) { resDiv.style.display = 'none'; balDiv.innerText = ''; return; }
+        const uniqueCusts = [...new Set(sales.map(s => s.cust))];
+        const filtered = uniqueCusts.filter(c => c.toLowerCase().includes(txt));
+        resDiv.innerHTML = filtered.map(name => {
+            const customerBal = sales.filter(s => s.cust === name).reduce((sum, s) => sum + s.total, 0);
+            return `<div class="search-item" onclick="selectCollectionCustomer('${name}', ${customerBal})">${name} <span style="float:right; color:red;">Bal: ₹${Math.round(customerBal)}</span></div>`;
+        }).join('');
+        resDiv.style.display = filtered.length ? 'block' : 'none';
+    };
+
+    window.selectCollectionCustomer = (name, balance) => {
+        document.getElementById('coll-cust').value = name;
+        document.getElementById('coll-cust-results').style.display = 'none';
+        document.getElementById('coll-balance').innerText = "Current Pending: ₹ " + Math.round(balance);
+    };
+
+    window.processCollection = async () => {
+        const cust = document.getElementById('coll-cust').value.trim();
+        const amount = parseFloat(document.getElementById('coll-amount').value);
+        const method = document.getElementById('coll-method').value;
+        if (!cust || !amount) return alert("പേരും തുകയും കൃത്യമായി നൽകുക!");
+        const now = new Date();
+        const collectionData = {
+            cust: cust, total: -amount, method: method,
+            items: [{ name: "Credit Payment Received", qty: 1, total: -amount }],
+            date: now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear(),
+            time: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+            timestamp: serverTimestamp(), isCollection: true
+        };
+        try {
+            await addDoc(collection(db, "sales"), collectionData);
+            alert(cust + " തന്ന ₹" + amount + " സേവ് ചെയ്തിട്ടുണ്ട്. ബാലൻസ് കുറഞ്ഞു.");
+            location.reload(); 
+        } catch (error) { alert("Error saving collection!"); }
+    };
+
+    // --- Chart & Reports ---
+    window.updateChart = () => {
+        const chartElem = document.getElementById('salesChart');
+        if(!chartElem) return;
+        const ctx = chartElem.getContext('2d');
+        const last7Days = [...Array(7)].map((_, i) => {
+            const d = new Date(); d.setDate(d.getDate() - i);
+            return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
+        }).reverse();
+        const dailyTotals = last7Days.map(date => sales.filter(s => s.date === date).reduce((sum, s) => sum + s.total, 0));
+        if (myChart) myChart.destroy();
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: last7Days.map(d => d.split('/')[0] + '/' + d.split('/')[1]),
+                datasets: [{ label: 'Sales (₹)', data: dailyTotals, borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', borderWidth: 3, fill: true, tension: 0.4 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+        });
+    };
+
     window.filterReports = () => {
         const d = document.getElementById('filter-date').value;
         const n = document.getElementById('filter-name').value.toLowerCase();
         let fDate = "";
-        if(d) {
-            const dateParts = d.split('-');
-            fDate = `${parseInt(dateParts[2])}/${parseInt(dateParts[1])}/${dateParts[0]}`;
-        }
-        const filtered = sales.filter(s => {
-            const matchesDate = fDate ? s.date === fDate : true;
-            const matchesName = n ? s.cust.toLowerCase().includes(n) : true;
-            return matchesDate && matchesName;
-        });
-        const listDiv = document.getElementById('filtered-sales-list');
-        listDiv.innerHTML = filtered.map(s => `
+        if(d) { const p = d.split('-'); fDate = `${parseInt(p[2])}/${parseInt(p[1])}/${p[0]}`; }
+        const filtered = sales.filter(s => (fDate ? s.date === fDate : true) && (n ? s.cust.toLowerCase().includes(n) : true));
+        document.getElementById('filtered-sales-list').innerHTML = filtered.map(s => `
             <div class="card">
                 <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b><b>₹${s.total}</b></div>
-                <small>${s.date} | ${s.method}</small>
-            </div>
-        `).join('');
+                <small>${s.date} | ${s.method} ${s.isCollection ? '(Collection)' : ''}</small>
+            </div>`).join('');
         if(n || d) {
-            let total = filtered.reduce((acc, curr) => acc + curr.total, 0);
             document.getElementById('report-summary').style.display = 'block';
-            document.getElementById('res-total').innerText = Math.round(total);
+            document.getElementById('res-total').innerText = Math.round(filtered.reduce((a, b) => a + b.total, 0));
             document.getElementById('res-name').innerText = n ? n.toUpperCase() : "Sales Report";
-        } else {
-            document.getElementById('report-summary').style.display = 'none';
-        }
+        } else { document.getElementById('report-summary').style.display = 'none'; }
     };
 
+    window.editBill = (id) => {
+        const s = sales.find(x => x.id === id);
+        if(!s) return;
+        tab('bill');
+        document.getElementById('edit-bill-id').value = id;
+        document.getElementById('cust-name').value = s.cust;
+        document.getElementById('pay-method').value = s.method;
+        cart = [...s.items];
+        updateCartUI();
+        document.getElementById('bill-title').innerText = "Edit Invoice";
+    };
+
+    window.deleteItem = async (id) => { if(confirm("Item ഡിലീറ്റ് ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
     document.addEventListener('click', (e) => { if(!e.target.closest('.search-container')) document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none'); });
 </script>
 </body>
