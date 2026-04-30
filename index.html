@@ -19,8 +19,8 @@
         .shop-info h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
         .shop-info p { margin: 2px 0; font-size: 0.85rem; opacity: 0.9; }
 
-        .nav-bar { display: grid; grid-template-columns: repeat(8, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .nav-btn { border: none; background: none; padding: 15px 2px; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; font-size: 0.7rem; }
+        .nav-bar { display: grid; grid-template-columns: repeat(9, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .nav-btn { border: none; background: none; padding: 15px 2px; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; font-size: 0.65rem; }
         .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); background: #f1f5f9; }
 
         .container { padding: 15px; max-width: 900px; margin: 0 auto; }
@@ -86,12 +86,14 @@
         <button class="nav-btn" id="btn-items" onclick="tab('items')">Stock</button>
         <button class="nav-btn" id="btn-collection" onclick="tab('collection')">Collection</button>
         <button class="nav-btn" id="btn-return" onclick="tab('return')">Return</button>
+        <button class="nav-btn admin-only" id="btn-staff" onclick="tab('staff')">Staff</button>
         <button class="nav-btn admin-only" id="btn-report" onclick="tab('report')">Reports</button>
         <button class="nav-btn admin-only" id="btn-expense" onclick="tab('expense')">Expenses</button>
         <button class="nav-btn admin-only" id="btn-profit" onclick="tab('profit')">Profit</button>
     </nav>
 
     <div class="container">
+        <!-- HOME SECTION -->
         <div id="sec-home">
             <div class="stats no-print">
                 <div class="stat-box blue admin-only"><h6>Stock Value</h6><h3 id="ds-stock">₹ 0</h3></div>
@@ -113,10 +115,17 @@
             <div id="recent-list"></div>
         </div>
 
+        <!-- BILLING SECTION -->
         <div id="sec-bill" style="display:none">
             <div class="card no-print">
                 <h3 id="bill-title">New Invoice</h3>
                 <input type="hidden" id="edit-bill-id">
+                
+                <!-- STAFF SELECTION -->
+                <select id="staff-name">
+                    <option value="">-- ബില്ല് അടിക്കുന്നത് ആര്? --</option>
+                </select>
+
                 <div class="search-container">
                     <input type="text" id="cust-name" placeholder="Customer Name" oninput="filterCustomers('bill')">
                     <div id="cust-results" class="search-results"></div>
@@ -150,6 +159,7 @@
                     <p>Taxable Amt: ₹ <span id="tax-amt">0.00</span></p>
                     <p>GST Amount: ₹ <span id="gst-amt">0.00</span></p>
                     <h2 style="color:var(--accent)">Grand Total: ₹ <span id="cart-total">0</span></h2>
+                    <p id="bill-staff-display" style="font-size: 0.8rem; opacity: 0.8;"></p>
                 </div>
                 <div class="no-print">
                     <select id="pay-method"><option value="cash">Cash</option><option value="gpay">G-Pay</option><option value="credit">Credit</option></select>
@@ -159,6 +169,7 @@
             </div>
         </div>
 
+        <!-- STOCK SECTION -->
         <div id="sec-items" style="display:none">
             <div class="card">
                 <h3>Manage Stock</h3>
@@ -176,6 +187,19 @@
             <div class="card"><table><thead><tr><th>Item</th><th>Stock</th><th>Rate</th><th>Action</th></tr></thead><tbody id="stock-body"></tbody></table></div>
         </div>
 
+        <!-- STAFF MANAGEMENT SECTION (NEW) -->
+        <div id="sec-staff" style="display:none" class="admin-only">
+            <div class="card">
+                <h3>സ്റ്റാഫ് മാനേജ്‌മെന്റ് (Manage Staff)</h3>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="new-staff-name" placeholder="സ്റ്റാഫിന്റെ പേര് ടൈപ്പ് ചെയ്യുക">
+                    <button class="btn btn-primary" onclick="addNewStaff()" style="width:150px;">Add Staff</button>
+                </div>
+                <div id="staff-list-admin" style="margin-top:15px;"></div>
+            </div>
+        </div>
+
+        <!-- REPORTS SECTION -->
         <div id="sec-report" style="display:none" class="admin-only">
             <div class="card no-print">
                 <h3>Search Reports</h3>
@@ -193,6 +217,7 @@
             <div id="filtered-sales-list"></div>
         </div>
 
+        <!-- EXPENSE SECTION -->
         <div id="sec-expense" style="display:none" class="admin-only">
             <div class="card">
                 <h3>Daily Expenses (ചെലവുകൾ)</h3>
@@ -203,6 +228,7 @@
             <div id="expense-list"></div>
         </div>
 
+        <!-- PROFIT SECTION -->
         <div id="sec-profit" style="display:none" class="admin-only">
             <div class="card">
                 <h3>Profit & Loss Report</h3>
@@ -211,6 +237,7 @@
             </div>
         </div>
 
+        <!-- RETURN SECTION -->
         <div id="sec-return" style="display:none">
             <div class="card">
                 <h3>Sales Return (തിരികെ എടുക്കൽ)</h3>
@@ -232,6 +259,7 @@
             </div>
         </div>
 
+        <!-- COLLECTION SECTION -->
         <div id="sec-collection" style="display:none">
             <div class="card">
                 <h3>Credit Collection (കടം വാങ്ങൽ)</h3>
@@ -276,13 +304,32 @@
     onSnapshot(collection(db, "sales"), (s) => { sales = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
     onSnapshot(collection(db, "expenses"), (s) => { expenses = s.docs.map(d => ({ id: d.id, ...d.data() })); renderExpenses(); });
 
+    // STAFF SNAPSHOT (NEW)
+    onSnapshot(collection(db, "staffs"), (s) => {
+        const staffList = s.docs.map(d => ({ id: d.id, ...d.data() }));
+        const select = document.getElementById('staff-name');
+        if(select) {
+            select.innerHTML = '<option value="">-- ബില്ല് അടിക്കുന്നത് ആര്? --</option>' + 
+                staffList.map(st => `<option value="${st.name}">${st.name}</option>`).join('');
+        }
+        const adminList = document.getElementById('staff-list-admin');
+        if(adminList) {
+            adminList.innerHTML = staffList.map(st => `
+                <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee;">
+                    <span>${st.name}</span>
+                    <button onclick="deleteStaff('${st.id}')" style="color:red; border:none; background:none; cursor:pointer;">Remove</button>
+                </div>
+            `).join('');
+        }
+    });
+
     window.tab = (id) => {
-        const adminTabs = ['report', 'expense', 'profit'];
+        const adminTabs = ['report', 'expense', 'profit', 'staff'];
         if(adminTabs.includes(id) && currentUser !== 'admin') return alert("അഡ്മിന് മാത്രമേ ഇത് കാണാൻ കഴിയൂ!");
         document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('sec-'+id).style.display = 'block';
-        document.getElementById('btn-'+id).classList.add('active');
+        if(document.getElementById('btn-'+id)) document.getElementById('btn-'+id).classList.add('active');
         if(id === 'home' && currentUser === 'admin') updateChart();
     };
 
@@ -306,8 +353,6 @@
 
         if (overdueList.length > 0 || inv.filter(i => i.qty <= 5).length > 0) {
             overdueDiv.style.display = 'block';
-            
-            // Add Overdue Reminders
             if(overdueList.length > 0) {
                 listDiv.innerHTML += `<h4 style="color:#92400e; margin-top:0;">⚠️ Credit Reminders</h4>`;
                 listDiv.innerHTML += overdueList.map(s => `
@@ -317,7 +362,6 @@
                     </div>
                 `).join('');
             }
-            // Add Low Stock Alerts
             checkLowStock();
         } else { overdueDiv.style.display = 'none'; }
 
@@ -341,7 +385,7 @@
             if(s.method === 'credit') cred += s.total; else cash += s.total;
             return `<div class="card" style="border-left: 5px solid ${s.total < 0 ? (s.isCollection ? 'var(--success)' : 'red') : 'var(--accent)'};">
                 <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b> <b>₹${Math.round(s.total)}</b></div>
-                <small>${s.date} | ${s.method} ${s.isCollection ? '(Coll)' : ''}</small>
+                <small>${s.date} | ${s.method} ${s.isCollection ? '(Coll)' : ''} ${s.staff ? '| Staff: '+s.staff : ''}</small>
                 <div class="no-print" style="margin-top:10px;">
                     <button class="btn-edit" onclick="editBill('${s.id}')">Edit</button>
                     <button class="btn-edit" onclick="reprintBill('${s.id}')">Print</button>
@@ -360,8 +404,19 @@
         }
     };
 
-    // --- NEW FUNCTIONS ---
+    // STAFF FUNCTIONS
+    window.addNewStaff = async () => {
+        const name = document.getElementById('new-staff-name').value.trim();
+        if(!name) return alert("പേര് നൽകുക!");
+        await addDoc(collection(db, "staffs"), { name: name });
+        document.getElementById('new-staff-name').value = '';
+    };
 
+    window.deleteStaff = async (id) => {
+        if(confirm("ഈ സ്റ്റാഫിനെ നീക്കം ചെയ്യണോ?")) await deleteDoc(doc(db, "staffs", id));
+    };
+
+    // EXPENSE FUNCTIONS
     window.saveExpense = async () => {
         const desc = document.getElementById('exp-desc').value;
         const amt = parseFloat(document.getElementById('exp-amt').value);
@@ -426,8 +481,8 @@
     };
 
     window.exportToExcel = () => {
-        let csv = "Date,Customer,Amount,Method\n";
-        sales.forEach(s => { csv += `${s.date},${s.cust},${s.total},${s.method}\n`; });
+        let csv = "Date,Customer,Amount,Method,Staff\n";
+        sales.forEach(s => { csv += `${s.date},${s.cust},${s.total},${s.method},${s.staff || ''}\n`; });
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -435,8 +490,6 @@
         a.setAttribute('download', 'sales_report.csv');
         a.click();
     };
-
-    // --- EXISTING FUNCTIONS (STAY SAME) ---
 
     window.filterCustomers = (type) => {
         const inputId = type === 'bill' ? 'cust-name' : (type === 'ret' ? 'ret-cust' : 'coll-cust');
@@ -538,6 +591,9 @@
 
     window.finishBill = async () => {
         if(cart.length === 0) return;
+        const staff = document.getElementById('staff-name').value;
+        if(!staff) return alert("ബില്ല് അടിക്കുന്ന സ്റ്റാഫിനെ തിരഞ്ഞെടുക്കുക!");
+
         const editId = document.getElementById('edit-bill-id').value;
         const now = new Date();
         const saleData = {
@@ -545,6 +601,7 @@
             phone: document.getElementById('cust-phone').value,
             total: parseFloat(document.getElementById('cart-total').innerText),
             method: document.getElementById('pay-method').value,
+            staff: staff,
             items: cart,
             date: now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear(),
             time: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
@@ -556,7 +613,8 @@
             const it = inv.find(i => i.id === c.invId);
             if(it) await updateDoc(doc(db, "inventory", c.invId), { qty: it.qty - c.qty });
         }
-        document.getElementById('print-bill-meta').innerText = `Cust: ${saleData.cust} | Date: ${saleData.date} ${saleData.time}`;
+        document.getElementById('print-bill-meta').innerText = `Cust: ${saleData.cust} | Staff: ${staff} | Date: ${saleData.date}`;
+        document.getElementById('bill-staff-display').innerText = "Billed by: " + staff;
         if(confirm("WhatsApp വഴി ബില്ല് അയക്കണോ?")) { setTimeout(() => sendWA(docRef.id), 500); }
         setTimeout(() => { window.print(); location.reload(); }, 1500);
     };
@@ -564,8 +622,8 @@
     window.reprintBill = (id) => {
         const s = sales.find(x => x.id === id);
         if(!s) return;
-        document.getElementById('cust-name').value = s.cust;
-        document.getElementById('print-bill-meta').innerText = `Cust: ${s.cust} | Date: ${s.date} ${s.time}`;
+        document.getElementById('print-bill-meta').innerText = `Cust: ${s.cust} | Staff: ${s.staff || ''} | Date: ${s.date} ${s.time}`;
+        document.getElementById('bill-staff-display').innerText = s.staff ? "Billed by: " + s.staff : "";
         cart = [...s.items];
         updateCartUI();
         setTimeout(() => { window.print(); }, 500);
@@ -651,7 +709,7 @@
         document.getElementById('filtered-sales-list').innerHTML = filtered.map(s => `
             <div class="card">
                 <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b><b>₹${Math.round(s.total)}</b></div>
-                <small>${s.date} | ${s.method} ${s.isCollection ? '(Coll)' : ''}</small>
+                <small>${s.date} | ${s.method} ${s.staff ? '| Staff: '+s.staff : ''}</small>
             </div>`).join('');
         if(n || d) {
             document.getElementById('report-summary').style.display = 'block';
@@ -668,6 +726,7 @@
         document.getElementById('cust-name').value = s.cust;
         document.getElementById('cust-phone').value = s.phone || "";
         document.getElementById('pay-method').value = s.method;
+        if(s.staff) document.getElementById('staff-name').value = s.staff;
         cart = [...s.items];
         updateCartUI();
         document.getElementById('bill-title').innerText = "Edit Invoice";
