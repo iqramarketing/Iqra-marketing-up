@@ -279,7 +279,11 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const firebaseConfig = { apiKey: "AIzaSyDmviHo3-oZChgxScf4RTfQ9d8nMNxSgGI", authDomain: "iqra-marketing.firebaseapp.com", projectId: "iqra-marketing" };
+    const firebaseConfig = { 
+        apiKey: "AIzaSyDmviHo3-oZChgxScf4RTfQ9d8nMNxSgGI", 
+        authDomain: "iqra-marketing.firebaseapp.com", 
+        projectId: "iqra-marketing" 
+    };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
@@ -299,10 +303,10 @@
         refreshUI();
     }
 
+    // Real-time Data Listeners
     onSnapshot(collection(db, "inventory"), (s) => { inv = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
     onSnapshot(collection(db, "sales"), (s) => { sales = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
     onSnapshot(collection(db, "expenses"), (s) => { expenses = s.docs.map(d => ({ id: d.id, ...d.data() })); renderExpenses(); });
-
     onSnapshot(collection(db, "staffs"), (s) => {
         const staffList = s.docs.map(d => ({ id: d.id, ...d.data() }));
         const select = document.getElementById('staff-name');
@@ -337,6 +341,7 @@
         const today = now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear();
         let sVal = 0, todayS = 0, cred = 0, cash = 0;
 
+        // Notifications logic
         const overdueList = sales.filter(s => {
             if (s.method !== 'credit' || s.total <= 0 || !s.timestamp) return false;
             const saleDate = s.timestamp.toDate();
@@ -347,7 +352,6 @@
         const overdueDiv = document.getElementById('overdue-section');
         const listDiv = document.getElementById('overdue-list');
         listDiv.innerHTML = ""; 
-
         const lowItems = inv.filter(i => i.qty <= 5);
 
         if (overdueList.length > 0 || lowItems.length > 0) {
@@ -367,6 +371,7 @@
             }
         } else { overdueDiv.style.display = 'none'; }
 
+        // Inventory Table
         document.getElementById('stock-body').innerHTML = inv.map(i => {
             if(currentUser === 'admin') sVal += (i.buy * i.qty) || 0;
             return `<tr>
@@ -380,6 +385,7 @@
             </tr>`;
         }).join('');
 
+        // Transactions List
         const sorted = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
         document.getElementById('recent-list').innerHTML = sorted.slice(0,15).map(s => {
             if(s.date === today) todayS += s.total;
@@ -405,17 +411,16 @@
         }
     };
 
+    // --- STAFF ---
     window.addNewStaff = async () => {
         const name = document.getElementById('new-staff-name').value.trim();
         if(!name) return alert("പേര് നൽകുക!");
         await addDoc(collection(db, "staffs"), { name: name });
         document.getElementById('new-staff-name').value = '';
     };
+    window.deleteStaff = async (id) => { if(confirm("ഈ സ്റ്റാഫിനെ നീക്കം ചെയ്യണോ?")) await deleteDoc(doc(db, "staffs", id)); };
 
-    window.deleteStaff = async (id) => {
-        if(confirm("ഈ സ്റ്റാഫിനെ നീക്കം ചെയ്യണോ?")) await deleteDoc(doc(db, "staffs", id));
-    };
-
+    // --- EXPENSES ---
     window.saveExpense = async () => {
         const desc = document.getElementById('exp-desc').value;
         const amt = parseFloat(document.getElementById('exp-amt').value);
@@ -430,7 +435,6 @@
         document.getElementById('exp-desc').value = '';
         document.getElementById('exp-amt').value = '';
     };
-
     function renderExpenses() {
         const list = document.getElementById('expense-list');
         if(!list) return;
@@ -442,19 +446,18 @@
         `).join('');
     }
 
+    // --- SEARCH FILTERS (CUSTOMER & ITEMS) ---
     window.filterCustomers = (type) => {
         const inputId = type === 'bill' ? 'cust-name' : (type === 'ret' ? 'ret-cust' : 'coll-cust');
         const resId = type === 'bill' ? 'cust-results' : (type === 'ret' ? 'ret-cust-results' : 'coll-cust-results');
         const txt = document.getElementById(inputId).value.toLowerCase();
         const resDiv = document.getElementById(resId);
         if(!txt) { resDiv.style.display = 'none'; return; }
-
         const unique = [...new Set(sales.map(s => s.cust))];
         const filtered = unique.filter(c => c.toLowerCase().includes(txt));
-
         resDiv.innerHTML = filtered.map(name => {
             const bal = sales.filter(s => s.cust === name && s.method === 'credit').reduce((a, b) => a + b.total, 0);
-            const coll = sales.filter(s => s.cust === name && s.isCollection).reduce((a, b) => a + Math.abs(b.total), 0);
+            const coll = sales.filter(s => s.cust === name && (s.isCollection || s.isReturn)).reduce((a, b) => a + Math.abs(b.total), 0);
             const finalBal = bal - coll;
             return `<div class="search-item" onclick="selectCust('${name}', ${finalBal}, '${type}')">${name} (Bal: ₹${Math.round(finalBal)})</div>`;
         }).join('');
@@ -465,17 +468,15 @@
         if(type === 'bill') {
             document.getElementById('cust-name').value = name;
             document.getElementById('cust-balance').innerText = "Bal: ₹" + Math.round(bal);
-            document.getElementById('cust-results').style.display = 'none';
             const last = sales.filter(s => s.cust === name).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))[0];
             if(last && last.phone) document.getElementById('cust-phone').value = last.phone;
         } else if(type === 'ret') {
             document.getElementById('ret-cust').value = name;
-            document.getElementById('ret-cust-results').style.display = 'none';
         } else {
             document.getElementById('coll-cust').value = name;
             document.getElementById('coll-balance').innerText = "Pending: ₹" + Math.round(bal);
-            document.getElementById('coll-cust-results').style.display = 'none';
         }
+        document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none');
     };
 
     window.filterItems = (type) => {
@@ -495,14 +496,14 @@
             document.getElementById('item-search').value = name;
             document.getElementById('selected-item-id').value = id;
             document.getElementById('stock-hint').innerText = `Stock: ${it.qty}`;
-            document.getElementById('search-results').style.display = 'none';
         } else {
             document.getElementById('ret-item-search').value = name;
             document.getElementById('ret-selected-id').value = id;
-            document.getElementById('ret-search-results').style.display = 'none';
         }
+        document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none');
     };
 
+    // --- INVENTORY MANAGEMENT ---
     window.saveItem = async () => {
         const name = document.getElementById('i-name').value.trim();
         const buy = parseFloat(document.getElementById('i-buy').value) || 0;
@@ -519,6 +520,7 @@
         ['i-name', 'i-buy', 'i-qty', 'i-retail', 'i-wholesale'].forEach(id => document.getElementById(id).value = '');
     };
 
+    // --- BILLING LOGIC ---
     window.addToCart = () => {
         const id = document.getElementById('selected-item-id').value;
         const qty = parseFloat(document.getElementById('sale-qty').value);
@@ -548,7 +550,6 @@
         if(cart.length === 0) return;
         const staff = document.getElementById('staff-name').value;
         if(!staff) return alert("ബില്ല് അടിക്കുന്ന സ്റ്റാഫിനെ തിരഞ്ഞെടുക്കുക!");
-
         const editId = document.getElementById('edit-bill-id').value;
         const now = new Date();
         const saleData = {
@@ -574,16 +575,7 @@
         setTimeout(() => { window.print(); location.reload(); }, 1500);
     };
 
-    window.reprintBill = (id) => {
-        const s = sales.find(x => x.id === id);
-        if(!s) return;
-        document.getElementById('print-bill-meta').innerText = `Cust: ${s.cust} | Staff: ${s.staff || ''} | Date: ${s.date} ${s.time}`;
-        document.getElementById('bill-staff-display').innerText = s.staff ? "Billed by: " + s.staff : "";
-        cart = [...s.items];
-        updateCartUI();
-        setTimeout(() => { window.print(); }, 500);
-    };
-
+    // --- RETURN & COLLECTION ---
     window.processReturn = async () => {
         const cust = document.getElementById('ret-cust').value.trim();
         const itemId = document.getElementById('ret-selected-id').value;
@@ -620,6 +612,7 @@
         location.reload(); 
     };
 
+    // --- ADMIN ACTIONS ---
     window.deleteSale = async (id, withPrompt = true) => {
         if(currentUser !== 'admin') return alert("അഡ്മിന് മാത്രമേ ഡിലീറ്റ് ചെയ്യാൻ കഴിയൂ!");
         if(withPrompt && !confirm("ഡിലീറ്റ് ചെയ്യണോ?")) return;
@@ -678,7 +671,6 @@
         if(!selMonth) return;
         const [year, month] = selMonth.split('-');
         const monthKey = parseInt(month) + '-' + year;
-
         let totalSalesProfit = 0;
         sales.filter(s => s.date.includes('/' + parseInt(month) + '/' + year)).forEach(s => {
             if(!s.isCollection && !s.isReturn) {
@@ -689,10 +681,8 @@
                 });
             }
         });
-
         const monthExp = expenses.filter(e => e.month === monthKey).reduce((a, b) => a + b.amt, 0);
         const finalProfit = totalSalesProfit - monthExp;
-
         document.getElementById('profit-display').innerHTML = `
             <p>Gross Profit: <b>₹${Math.round(totalSalesProfit)}</b></p>
             <p>Total Expenses: <b>₹${Math.round(monthExp)}</b></p>
@@ -710,6 +700,17 @@
         a.setAttribute('href', url);
         a.setAttribute('download', 'sales_report.csv');
         a.click();
+    };
+
+    // --- REPRINT & EDIT BILL ---
+    window.reprintBill = (id) => {
+        const s = sales.find(x => x.id === id);
+        if(!s) return;
+        document.getElementById('print-bill-meta').innerText = `Cust: ${s.cust} | Staff: ${s.staff || ''} | Date: ${s.date} ${s.time}`;
+        document.getElementById('bill-staff-display').innerText = s.staff ? "Billed by: " + s.staff : "";
+        cart = [...s.items];
+        updateCartUI();
+        setTimeout(() => { window.print(); }, 500);
     };
 
     window.editBill = (id) => {
@@ -740,6 +741,7 @@
 
     window.deleteItem = async (id) => { if(confirm("ഡിലീറ്റ് ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
     
+    // --- WHATSAPP MESSAGES ---
     window.sendReminder = (id) => {
         const s = sales.find(x => x.id === id);
         if(!s || !s.phone) return alert("ഫോൺ നമ്പർ ഇല്ല!");
