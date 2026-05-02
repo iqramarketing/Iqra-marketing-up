@@ -322,7 +322,7 @@
             `).join('');
         }
     });
-
+q
     window.tab = (id) => {
         const adminTabs = ['report', 'expense', 'profit', 'staff'];
         if(adminTabs.includes(id) && currentUser !== 'admin') return alert("അഡ്മിന് മാത്രമേ ഇത് കാണാൻ കഴിയൂ!");
@@ -333,76 +333,70 @@
         if(id === 'home' && currentUser === 'admin') updateChart();
     };
 
-    window.refreshUI = () => {
-        if (!currentUser) return;
-        const now = new Date();
-        const today = now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear();
-        let sVal = 0, todayS = 0, cred = 0, cash = 0;
+   window.refreshUI = () => {
+    if (!currentUser) return;
+    const now = new Date();
+    const today = now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear();
+    let sVal = 0, todayS = 0, cred = 0, cash = 0, gpay = 0;
 
-        // Overdue & Low Stock logic
-        const overdueList = sales.filter(s => {
-            if (s.method !== 'credit' || s.total <= 0 || !s.timestamp) return false;
-            const saleDate = s.timestamp.toDate();
-            const diffDays = Math.floor((now - saleDate) / (1000 * 60 * 60 * 24));
-            return diffDays >= 5;
-        });
+    // 5 ദിവസത്തിൽ കൂടുതൽ പഴക്കമുള്ള കടം (Credit Overdue Logic)
+    const overdueList = sales.filter(s => {
+        if (s.method !== 'credit' || s.total <= 0 || !s.timestamp) return false;
+        const saleDate = s.timestamp.toDate();
+        const diffDays = Math.floor((now - saleDate) / (1000 * 60 * 60 * 24));
+        return diffDays >= 5;
+    });
 
-        const overdueDiv = document.getElementById('overdue-section');
-        const listDiv = document.getElementById('overdue-list');
-        listDiv.innerHTML = ""; 
+    const overdueDiv = document.getElementById('overdue-section');
+    const listDiv = document.getElementById('overdue-list');
+    listDiv.innerHTML = ""; 
 
-        if (overdueList.length > 0 || inv.filter(i => i.qty <= 5).length > 0) {
-            overdueDiv.style.display = 'block';
-            if(overdueList.length > 0) {
-                listDiv.innerHTML += `<h4 style="color:#92400e; margin-top:0;">⚠️ Credit Reminders</h4>`;
-                listDiv.innerHTML += overdueList.map(s => `
-                    <div class="overdue-item">
-                        <span><b>${s.cust}</b> (₹${Math.round(s.total)}) - ${s.date}</span>
-                        <button class="btn-wa" onclick="sendReminder('${s.id}')">Send Reminder</button>
-                    </div>
-                `).join('');
-            }
-            checkLowStock();
-        } else { overdueDiv.style.display = 'none'; }
-
-        // STOCK BODY UPDATE
-        document.getElementById('stock-body').innerHTML = inv.map(i => {
-            if(currentUser === 'admin') sVal += (i.buy * i.qty) || 0;
-            return `<tr>
-                <td>${i.name}</td>
-                <td><b style="color:${i.qty <= 5 ? 'red':'inherit'}">${i.qty}</b></td>
-                <td>${i.retail}</td>
-                <td>
-                    <button class="btn-edit" onclick="editStock('${i.id}')">Edit</button>
-                    <button class="btn-del admin-only" style="display:${currentUser === 'admin' ? 'inline-block':'none'}" onclick="deleteItem('${i.id}')">Del</button>
-                </td>
-            </tr>`;
-        }).join('');
-
-        const sorted = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-        document.getElementById('recent-list').innerHTML = sorted.slice(0,15).map(s => {
-            if(s.date === today) todayS += s.total;
-            if(s.method === 'credit') cred += s.total; else cash += s.total;
-            return `<div class="card" style="border-left: 5px solid ${s.total < 0 ? (s.isCollection ? 'var(--success)' : 'red') : 'var(--accent)'};">
-                <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b> <b>₹${Math.round(s.total)}</b></div>
-                <small>${s.date} | ${s.method} ${s.isCollection ? '(Coll)' : ''} ${s.staff ? '| Staff: '+s.staff : ''}</small>
-                <div class="no-print" style="margin-top:10px;">
-                    <button class="btn-edit" onclick="editBill('${s.id}')">Edit</button>
-                    <button class="btn-edit" onclick="reprintBill('${s.id}')">Print</button>
-                    <button class="btn-wa" onclick="sendWA('${s.id}')">WA</button>
-                    ${currentUser === 'admin' ? `<button class="btn-del" onclick="deleteSale('${s.id}')">Del</button>` : ''}
+    if (overdueList.length > 0 || inv.filter(i => i.qty <= 5).length > 0) {
+        overdueDiv.style.display = 'block';
+        if(overdueList.length > 0) {
+            listDiv.innerHTML += `<h4 style="color:#92400e; margin-top:0;">⚠️ Credit Reminders</h4>`;
+            listDiv.innerHTML += overdueList.map(s => `
+                <div class="overdue-item">
+                    <span><b>${s.cust}</b> (₹${Math.round(s.total)}) - ${s.date}</span>
+                    <button class="btn-wa" onclick="sendReminder('${s.id}')">Send Reminder</button>
                 </div>
-            </div>`;
-        }).join('');
-
-        if(currentUser === 'admin') {
-            document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString('en-IN');
-            document.getElementById('ds-sale').innerText = "₹ " + Math.round(todayS).toLocaleString('en-IN');
-            document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString('en-IN');
-            document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
-            updateChart();
+            `).join('');
         }
-    };
+        checkLowStock();
+    } else { overdueDiv.style.display = 'none'; }
+
+    // സ്റ്റോക്ക് ലിസ്റ്റ് അപ്ഡേറ്റ്
+    document.getElementById('stock-body').innerHTML = inv.map(i => {
+        if(currentUser === 'admin') sVal += (i.buy * i.qty) || 0;
+        return `<tr><td>${i.name}</td><td><b style="color:${i.qty <= 5 ? 'red':'inherit'}">${i.qty}</b></td><td>${i.retail}</td><td><button class="btn-edit" onclick="editStock('${i.id}')">Edit</button></td></tr>`;
+    }).join('');
+
+    const sorted = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+    document.getElementById('recent-list').innerHTML = sorted.slice(0,15).map(s => {
+        if(s.date === today) todayS += s.total;
+        
+        // ക്യാഷ്, ജി-പേ, ക്രെഡിറ്റ് കണക്കുകൾ തിരിക്കുന്നു
+        if(s.method === 'credit') cred += s.total; 
+        else if(s.method === 'gpay') gpay += s.total; 
+        else cash += s.total; 
+
+        return `<div class="card" style="border-left: 5px solid ${s.total < 0 ? (s.isCollection ? '#22c55e' : 'red') : '#3b82f6'};">
+            <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b> <b>₹${Math.round(s.total)}</b></div>
+            <small>${s.date} | ${s.method} ${s.isCollection ? '(Coll)' : ''}</small>
+        </div>`;
+    }).join('');
+
+    // അഡ്മിൻ ബോക്സുകളിൽ കണക്കുകൾ കാണിക്കുന്നു
+    if(currentUser === 'admin') {
+        document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString('en-IN');
+        document.getElementById('ds-sale').innerText = "₹ " + Math.round(todayS).toLocaleString('en-IN');
+        document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString('en-IN');
+        document.getElementById('ds-cash-only').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
+        document.getElementById('ds-gpay-only').innerText = "₹ " + Math.round(gpay).toLocaleString('en-IN');
+        updateChart();
+    }
+};
+
 
     // STAFF FUNCTIONS
     window.addNewStaff = async () => {
