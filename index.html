@@ -19,8 +19,8 @@
         .shop-info h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
         .shop-info p { margin: 2px 0; font-size: 0.85rem; opacity: 0.9; }
 
-        .nav-bar { display: grid; grid-template-columns: repeat(9, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .nav-btn { border: none; background: none; padding: 15px 2px; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; font-size: 0.65rem; }
+        .nav-bar { display: grid; grid-template-columns: repeat(9, 1fr); background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow-x: auto; }
+        .nav-btn { border: none; background: none; padding: 15px 5px; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; font-size: 0.65rem; min-width: 60px; }
         .nav-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); background: #f1f5f9; }
 
         .container { padding: 15px; max-width: 900px; margin: 0 auto; }
@@ -348,7 +348,9 @@
         const listDiv = document.getElementById('overdue-list');
         listDiv.innerHTML = ""; 
 
-        if (overdueList.length > 0 || inv.filter(i => i.qty <= 5).length > 0) {
+        const lowItems = inv.filter(i => i.qty <= 5);
+
+        if (overdueList.length > 0 || lowItems.length > 0) {
             overdueDiv.style.display = 'block';
             if(overdueList.length > 0) {
                 listDiv.innerHTML += `<h4 style="color:#92400e; margin-top:0;">⚠️ Credit Reminders</h4>`;
@@ -359,7 +361,10 @@
                     </div>
                 `).join('');
             }
-            checkLowStock();
+            if(lowItems.length > 0) {
+                listDiv.innerHTML += `<h4 style="color:red; margin-top:10px;">⚠️ Low Stock Alert</h4>`;
+                lowItems.forEach(i => { listDiv.innerHTML += `<p>${i.name}: <b>Only ${i.qty} left</b></p>`; });
+            }
         } else { overdueDiv.style.display = 'none'; }
 
         document.getElementById('stock-body').innerHTML = inv.map(i => {
@@ -437,7 +442,6 @@
         `).join('');
     }
 
-    // --- അപ്ഡേറ്റ് ചെയ്ത filterCustomers ഫംഗ്ഷൻ ഇവിടെയാണ് ---
     window.filterCustomers = (type) => {
         const inputId = type === 'bill' ? 'cust-name' : (type === 'ret' ? 'ret-cust' : 'coll-cust');
         const resId = type === 'bill' ? 'cust-results' : (type === 'ret' ? 'ret-cust-results' : 'coll-cust-results');
@@ -449,16 +453,9 @@
         const filtered = unique.filter(c => c.toLowerCase().includes(txt));
 
         resDiv.innerHTML = filtered.map(name => {
-            // ക്രെഡിറ്റ് ബില്ലുകൾ മാത്രം ബാലൻസിൽ കണക്കാക്കുന്നു
-            const bal = sales.filter(s => s.cust === name && s.method === 'credit')
-                             .reduce((a, b) => a + b.total, 0);
-            
-            // കളക്ഷൻ വഴി ലഭിച്ച തുക കുറയ്ക്കുന്നു
-            const coll = sales.filter(s => s.cust === name && s.isCollection)
-                              .reduce((a, b) => a + Math.abs(b.total), 0);
-            
+            const bal = sales.filter(s => s.cust === name && s.method === 'credit').reduce((a, b) => a + b.total, 0);
+            const coll = sales.filter(s => s.cust === name && s.isCollection).reduce((a, b) => a + Math.abs(b.total), 0);
             const finalBal = bal - coll;
-
             return `<div class="search-item" onclick="selectCust('${name}', ${finalBal}, '${type}')">${name} (Bal: ₹${Math.round(finalBal)})</div>`;
         }).join('');
         resDiv.style.display = filtered.length ? 'block' : 'none';
@@ -674,6 +671,45 @@
             document.getElementById('res-total').innerText = Math.round(filtered.reduce((a, b) => a + b.total, 0));
             document.getElementById('res-name').innerText = n ? n.toUpperCase() : "Sales Report";
         } else { document.getElementById('report-summary').style.display = 'none'; }
+    };
+
+    window.showProfitReport = () => {
+        const selMonth = document.getElementById('profit-month').value;
+        if(!selMonth) return;
+        const [year, month] = selMonth.split('-');
+        const monthKey = parseInt(month) + '-' + year;
+
+        let totalSalesProfit = 0;
+        sales.filter(s => s.date.includes('/' + parseInt(month) + '/' + year)).forEach(s => {
+            if(!s.isCollection && !s.isReturn) {
+                s.items.forEach(item => {
+                    const product = inv.find(p => p.name === item.name);
+                    const buyPrice = product ? (product.buy || 0) : 0;
+                    totalSalesProfit += (item.rate - buyPrice) * item.qty;
+                });
+            }
+        });
+
+        const monthExp = expenses.filter(e => e.month === monthKey).reduce((a, b) => a + b.amt, 0);
+        const finalProfit = totalSalesProfit - monthExp;
+
+        document.getElementById('profit-display').innerHTML = `
+            <p>Gross Profit: <b>₹${Math.round(totalSalesProfit)}</b></p>
+            <p>Total Expenses: <b>₹${Math.round(monthExp)}</b></p>
+            <hr>
+            <h2 style="color:${finalProfit > 0 ? 'green':'red'}">Net Profit: ₹${Math.round(finalProfit)}</h2>
+        `;
+    };
+
+    window.exportToExcel = () => {
+        let csv = "Date,Customer,Amount,Method,Staff\n";
+        sales.forEach(s => { csv += `${s.date},${s.cust},${s.total},${s.method},${s.staff || ''}\n`; });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'sales_report.csv');
+        a.click();
     };
 
     window.editBill = (id) => {
