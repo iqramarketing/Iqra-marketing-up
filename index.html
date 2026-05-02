@@ -121,7 +121,6 @@
                 <h3 id="bill-title">New Invoice</h3>
                 <input type="hidden" id="edit-bill-id">
                 
-                <!-- STAFF SELECTION -->
                 <select id="staff-name">
                     <option value="">-- ബില്ല് അടിക്കുന്നത് ആര്? --</option>
                 </select>
@@ -187,7 +186,7 @@
             <div class="card"><table><thead><tr><th>Item</th><th>Stock</th><th>Rate</th><th>Action</th></tr></thead><tbody id="stock-body"></tbody></table></div>
         </div>
 
-        <!-- STAFF MANAGEMENT SECTION (NEW) -->
+        <!-- STAFF MANAGEMENT SECTION -->
         <div id="sec-staff" style="display:none" class="admin-only">
             <div class="card">
                 <h3>സ്റ്റാഫ് മാനേജ്‌മെന്റ് (Manage Staff)</h3>
@@ -304,7 +303,6 @@
     onSnapshot(collection(db, "sales"), (s) => { sales = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
     onSnapshot(collection(db, "expenses"), (s) => { expenses = s.docs.map(d => ({ id: d.id, ...d.data() })); renderExpenses(); });
 
-    // STAFF SNAPSHOT (NEW)
     onSnapshot(collection(db, "staffs"), (s) => {
         const staffList = s.docs.map(d => ({ id: d.id, ...d.data() }));
         const select = document.getElementById('staff-name');
@@ -339,7 +337,6 @@
         const today = now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear();
         let sVal = 0, todayS = 0, cred = 0, cash = 0;
 
-        // Overdue & Low Stock logic
         const overdueList = sales.filter(s => {
             if (s.method !== 'credit' || s.total <= 0 || !s.timestamp) return false;
             const saleDate = s.timestamp.toDate();
@@ -365,7 +362,6 @@
             checkLowStock();
         } else { overdueDiv.style.display = 'none'; }
 
-        // STOCK BODY UPDATE
         document.getElementById('stock-body').innerHTML = inv.map(i => {
             if(currentUser === 'admin') sVal += (i.buy * i.qty) || 0;
             return `<tr>
@@ -404,7 +400,6 @@
         }
     };
 
-    // STAFF FUNCTIONS
     window.addNewStaff = async () => {
         const name = document.getElementById('new-staff-name').value.trim();
         if(!name) return alert("പേര് നൽകുക!");
@@ -416,7 +411,6 @@
         if(confirm("ഈ സ്റ്റാഫിനെ നീക്കം ചെയ്യണോ?")) await deleteDoc(doc(db, "staffs", id));
     };
 
-    // EXPENSE FUNCTIONS
     window.saveExpense = async () => {
         const desc = document.getElementById('exp-desc').value;
         const amt = parseFloat(document.getElementById('exp-amt').value);
@@ -443,65 +437,29 @@
         `).join('');
     }
 
-    window.checkLowStock = () => {
-        const lowItems = inv.filter(i => i.qty <= 5);
-        if(lowItems.length > 0) {
-            let html = `<h4 style="color:red; margin-top:10px;">⚠️ Low Stock Alert</h4>`;
-            lowItems.forEach(i => { html += `<p>${i.name}: <b>Only ${i.qty} left</b></p>`; });
-            document.getElementById('overdue-list').innerHTML += html;
-        }
-    };
-
-    window.showProfitReport = () => {
-        const selMonth = document.getElementById('profit-month').value;
-        if(!selMonth) return;
-        const [year, month] = selMonth.split('-');
-        const monthKey = parseInt(month) + '-' + year;
-
-        let totalSalesProfit = 0;
-        sales.filter(s => s.date.includes('/' + parseInt(month) + '/' + year)).forEach(s => {
-            if(!s.isCollection && !s.isReturn) {
-                s.items.forEach(item => {
-                    const product = inv.find(p => p.name === item.name);
-                    const buyPrice = product ? (product.buy || 0) : 0;
-                    totalSalesProfit += (item.rate - buyPrice) * item.qty;
-                });
-            }
-        });
-
-        const monthExp = expenses.filter(e => e.month === monthKey).reduce((a, b) => a + b.amt, 0);
-        const finalProfit = totalSalesProfit - monthExp;
-
-        document.getElementById('profit-display').innerHTML = `
-            <p>Gross Profit: <b>₹${Math.round(totalSalesProfit)}</b></p>
-            <p>Total Expenses: <b>₹${Math.round(monthExp)}</b></p>
-            <hr>
-            <h2 style="color:${finalProfit > 0 ? 'green':'red'}">Net Profit: ₹${Math.round(finalProfit)}</h2>
-        `;
-    };
-
-    window.exportToExcel = () => {
-        let csv = "Date,Customer,Amount,Method,Staff\n";
-        sales.forEach(s => { csv += `${s.date},${s.cust},${s.total},${s.method},${s.staff || ''}\n`; });
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.setAttribute('href', url);
-        a.setAttribute('download', 'sales_report.csv');
-        a.click();
-    };
-
+    // --- അപ്ഡേറ്റ് ചെയ്ത filterCustomers ഫംഗ്ഷൻ ഇവിടെയാണ് ---
     window.filterCustomers = (type) => {
         const inputId = type === 'bill' ? 'cust-name' : (type === 'ret' ? 'ret-cust' : 'coll-cust');
         const resId = type === 'bill' ? 'cust-results' : (type === 'ret' ? 'ret-cust-results' : 'coll-cust-results');
         const txt = document.getElementById(inputId).value.toLowerCase();
         const resDiv = document.getElementById(resId);
         if(!txt) { resDiv.style.display = 'none'; return; }
+
         const unique = [...new Set(sales.map(s => s.cust))];
         const filtered = unique.filter(c => c.toLowerCase().includes(txt));
+
         resDiv.innerHTML = filtered.map(name => {
-            const bal = sales.filter(s => s.cust === name).reduce((a,b) => a + b.total, 0);
-            return `<div class="search-item" onclick="selectCust('${name}', ${bal}, '${type}')">${name} (₹${Math.round(bal)})</div>`;
+            // ക്രെഡിറ്റ് ബില്ലുകൾ മാത്രം ബാലൻസിൽ കണക്കാക്കുന്നു
+            const bal = sales.filter(s => s.cust === name && s.method === 'credit')
+                             .reduce((a, b) => a + b.total, 0);
+            
+            // കളക്ഷൻ വഴി ലഭിച്ച തുക കുറയ്ക്കുന്നു
+            const coll = sales.filter(s => s.cust === name && s.isCollection)
+                              .reduce((a, b) => a + Math.abs(b.total), 0);
+            
+            const finalBal = bal - coll;
+
+            return `<div class="search-item" onclick="selectCust('${name}', ${finalBal}, '${type}')">${name} (Bal: ₹${Math.round(finalBal)})</div>`;
         }).join('');
         resDiv.style.display = filtered.length ? 'block' : 'none';
     };
@@ -745,12 +703,14 @@
     };
 
     window.deleteItem = async (id) => { if(confirm("ഡിലീറ്റ് ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
+    
     window.sendReminder = (id) => {
         const s = sales.find(x => x.id === id);
         if(!s || !s.phone) return alert("ഫോൺ നമ്പർ ഇല്ല!");
         let msg = `*IQRA MARKETING - REMINDER*%0Aപ്രിയ ${s.cust},%0Aനിങ്ങളുടെ ₹*${Math.round(s.total)}* തുകയുള്ള ക്രെഡിറ്റ് പേയ്മെന്റ് ശ്രദ്ധിക്കുമല്ലോ. നന്ദി.`;
         window.open(`https://wa.me/${s.phone}?text=${msg}`, '_blank');
     };
+    
     window.sendWA = (id) => {
         const s = sales.find(x => x.id === id);
         if(!s || !s.phone) return alert("ഫോൺ നമ്പർ ഇല്ല!");
