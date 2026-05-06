@@ -791,6 +791,22 @@
     };
 
     document.addEventListener('click', (e) => { if(!e.target.closest('.search-container')) document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none'); });
+        // ... നിലവിലുള്ള നിങ്ങളുടെ മറ്റ് കോഡുകൾ ഇവിടെ അവസാനിക്കുന്നു ...
+
+    // ഇതിന് താഴെയായി പുതിയ ഫങ്ക്ഷൻ പേസ്റ്റ് ചെയ്യുക
+    window.updateTotalWithOldBal = () => {
+        const currentBill = parseFloat(document.getElementById('cart-total').innerText) || 0;
+        const oldBal = parseFloat(document.getElementById('display-old-bal').innerText) || 0;
+        const totalOut = Math.round(currentBill + oldBal);
+        if(document.getElementById('total-outstanding')) {
+            document.getElementById('total-outstanding').innerText = totalOut;
+        }
+    };
+
+</script>
+</body>
+</html>
+
 </script>
 </body>
 </html>
