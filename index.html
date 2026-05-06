@@ -472,12 +472,21 @@
     };
 
     window.selectCust = (name, bal, type) => {
-        if(type === 'bill') {
-            document.getElementById('cust-name').value = name;
-            document.getElementById('cust-balance').innerText = "Bal: ₹" + Math.round(bal);
-            const last = sales.filter(s => s.cust === name).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))[0];
-            if(last && last.phone) document.getElementById('cust-phone').value = last.phone;
-        } else if(type === 'ret') {
+    if(type === 'bill') {
+        document.getElementById('cust-name').value = name;
+        const oldBal = Math.round(bal);
+        // ഇവിടെയാണ് പഴയ ബാലൻസ് സ്ക്രീനിൽ കാണിക്കുന്നത്
+        if(document.getElementById('display-old-bal')) {
+            document.getElementById('display-old-bal').innerText = oldBal;
+        }
+        document.getElementById('cust-balance').innerText = "Bal: ₹" + oldBal;
+        
+        const last = sales.filter(s => s.cust === name).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))[0];
+        if(last && last.phone) document.getElementById('cust-phone').value = last.phone;
+        
+        updateTotalWithOldBal(); // ടോട്ടൽ പുതുക്കാൻ
+    } else if(type === 'ret') {
+
             document.getElementById('ret-cust').value = name;
         } else {
             document.getElementById('coll-cust').value = name;
