@@ -552,15 +552,31 @@
     };
 
     window.updateCartUI = () => {
-        let tax = 0, gst = 0, grand = 0;
-        document.getElementById('cart-body').innerHTML = cart.map((c, i) => {
-            tax += c.base; gst += c.gstA; grand += c.total;
-            return `<tr><td>${i + 1}</td><td>${c.name}</td><td>${c.qty}</td><td>${c.rate}</td><td>${c.gstP}%</td><td>${c.total.toFixed(2)}</td><td class="no-print"><button onclick="cart.splice(${i},1);updateCartUI()" class="btn-del">X</button></td></tr>`;
-        }).join('');
-        document.getElementById('tax-amt').innerText = tax.toFixed(2);
-        document.getElementById('gst-amt').innerText = gst.toFixed(2);
-        document.getElementById('cart-total').innerText = Math.round(grand);
-    };
+    let tax = 0, gst = 0, grand = 0;
+    document.getElementById('cart-body').innerHTML = cart.map((c, i) => {
+        tax += c.base; gst += c.gstA; grand += c.total;
+        // ഇവിടെ ഡിലീറ്റ് ബട്ടൺ ഇപ്പോൾ എല്ലാവർക്കും വർക്ക് ചെയ്യും
+        return `<tr>
+            <td>${i + 1}</td>
+            <td>${c.name}</td>
+            <td>${c.qty}</td>
+            <td>${c.rate}</td>
+            <td>${c.gstP}%</td>
+            <td>${c.total.toFixed(2)}</td>
+            <td class="no-print">
+                <button onclick="cart.splice(${i},1);updateCartUI()" class="btn-del">X</button>
+            </td>
+        </tr>`;
+    }).join('');
+    
+    document.getElementById('tax-amt').innerText = tax.toFixed(2);
+    document.getElementById('gst-amt').innerText = gst.toFixed(2);
+    document.getElementById('cart-total').innerText = Math.round(grand);
+
+    // പഴയ ബാലൻസും പുതിയ ബില്ലും കൂടി കൂട്ടാൻ
+    updateTotalWithOldBal();
+};
+
 
     window.finishBill = async () => {
         if(cart.length === 0) return;
