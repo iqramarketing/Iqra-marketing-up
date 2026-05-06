@@ -554,10 +554,12 @@
   window.updateCartUI = () => {
     let tax = 0, gst = 0, grand = 0;
     const cartBody = document.getElementById('cart-body');
-    if(!cartBody) return;
+    if (!cartBody) return;
 
     cartBody.innerHTML = cart.map((c, i) => {
-        tax += c.base; gst += c.gstA; grand += c.total;
+        tax += c.base; 
+        gst += c.gstA; 
+        grand += c.total;
         return `<tr>
             <td>${i + 1}</td>
             <td>${c.name}</td>
@@ -570,13 +572,17 @@
             </td>
         </tr>`;
     }).join('');
-    
+
     document.getElementById('tax-amt').innerText = tax.toFixed(2);
     document.getElementById('gst-amt').innerText = gst.toFixed(2);
     document.getElementById('cart-total').innerText = Math.round(grand);
 
-    if(window.updateTotalWithOldBal) window.updateTotalWithOldBal();
+    // പഴയ ബാലൻസ് കൂടി ചേർത്ത് ടോട്ടൽ പുതുക്കാൻ
+    if (window.updateTotalWithOldBal) {
+        window.updateTotalWithOldBal();
+    }
 };
+
 
 
   window.finishBill = async () => {
