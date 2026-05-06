@@ -551,7 +551,7 @@
         ['item-search', 'selected-item-id', 'stock-hint', 'sale-qty'].forEach(i => { if(document.getElementById(i)) document.getElementById(i).value = ''; });
     };
 
-   window.updateCartUI = () => {
+  window.updateCartUI = () => {
     let tax = 0, gst = 0, grand = 0;
     const cartBody = document.getElementById('cart-body');
     if(!cartBody) return;
@@ -575,14 +575,11 @@
     document.getElementById('gst-amt').innerText = gst.toFixed(2);
     document.getElementById('cart-total').innerText = Math.round(grand);
 
-    // പഴയ ബാലൻസ് ഫങ്ക്ഷൻ ഉണ്ടെങ്കിൽ പ്രവർത്തിക്കാൻ
     if(window.updateTotalWithOldBal) window.updateTotalWithOldBal();
 };
 
 
-
-
-    window.finishBill = async () => {
+  window.finishBill = async () => {
         if(cart.length === 0) return;
         const staff = document.getElementById('staff-name').value;
         if(!staff) return alert("ബില്ല് അടിക്കുന്ന സ്റ്റാഫിനെ തിരഞ്ഞെടുക്കുക!");
