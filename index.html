@@ -504,6 +504,22 @@
         }
         document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none');
     };
+window.calculateBalance = () => {
+    // Total Outstanding-ൽ ഉള്ള തുക എടുക്കുന്നു
+    const totalOutText = document.getElementById('total-outstanding').innerText;
+    const totalOut = parseFloat(totalOutText.replace(/[^\d.-]/g, '')) || 0;
+    
+    // ടൈപ്പ് ചെയ്യുന്ന ക്യാഷ് എടുക്കുന്നു
+    const received = parseFloat(document.getElementById('cash-received').value) || 0;
+    
+    // ബാക്കി തുക കണക്കാക്കുന്നു
+    const remaining = totalOut - received;
+    
+    // സ്ക്രീനിൽ കാണിക്കുന്നു
+    if(document.getElementById('remaining-balance')) {
+        document.getElementById('remaining-balance').innerText = Math.round(remaining);
+    }
+};
 
     window.filterItems = (type) => {
         const inputId = type === 'bill' ? 'item-search' : 'ret-item-search';
