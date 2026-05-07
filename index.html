@@ -556,6 +556,7 @@
     const cartBody = document.getElementById('cart-body');
     if (!cartBody) return;
 
+    // ലിസ്റ്റ് തയ്യാറാക്കുന്നു
     cartBody.innerHTML = cart.map((c, i) => {
         tax += c.base; 
         gst += c.gstA; 
@@ -573,15 +574,17 @@
         </tr>`;
     }).join('');
 
+    // തുകകൾ അപ്ഡേറ്റ് ചെയ്യുന്നു
     document.getElementById('tax-amt').innerText = tax.toFixed(2);
     document.getElementById('gst-amt').innerText = gst.toFixed(2);
     document.getElementById('cart-total').innerText = Math.round(grand);
 
-    // പഴയ ബാലൻസ് കൂടി ചേർത്ത് ടോട്ടൽ പുതുക്കാൻ
+    // പഴയ ബാലൻസ് ഉണ്ടെങ്കിൽ അതും കൂട്ടി ടോട്ടൽ കാണിക്കുന്നു
     if (window.updateTotalWithOldBal) {
         window.updateTotalWithOldBal();
     }
 };
+
 
  window.finishBill = async () => {
         if(cart.length === 0) return;
