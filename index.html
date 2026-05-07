@@ -348,22 +348,18 @@
         const now = new Date();
         const today = now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear();
         
+        let totalCashGPay = 0;
+        let totalCredit = 0;
+        let totalExpense = 0;
+        let todaySale = 0;
+
+        // 1. സെയിൽസ് കണക്ക് കൂട്ടുന്നു
         sales.forEach(s => {
-    if(s.method === 'cash') {
-        totalCash += s.total;
-    } else if(s.method === 'gpay') {
-        totalGPay += s.total;
-    } else if(s.method === 'credit') {
-        totalCredit += s.total;
-    }
-});
-
-let balanceInHand = totalCash - totalExpense;
-
-document.getElementById('ds-cash').innerText = "₹ " + Math.round(totalCash + totalGPay).toLocaleString('en-IN');
-document.getElementById('ds-cred').innerText = "₹ " + Math.round(totalCredit).toLocaleString('en-IN');
-document.getElementById('ds-bal').innerText = "₹ " + Math.round(balanceInHand).toLocaleString('en-IN');
-
+            if(s.method === 'credit') {
+                totalCredit += s.total;
+            } else {
+                totalCashGPay += s.total;
+            }
             if(s.date === today) todaySale += s.total;
         });
 
@@ -809,4 +805,3 @@ document.getElementById('ds-bal').innerText = "₹ " + Math.round(balanceInHand)
 </script>
 </body>
 </html>
- 
