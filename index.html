@@ -348,17 +348,7 @@
         const now = new Date();
         const today = now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear();
         
-        let totalCashGPay = 0;
-        let totalCredit = 0;
-        let totalExpense = 0;
-        let todaySale = 0;
-
-        // 1. സെയിൽസ് കണക്ക് കൂട്ടുന്നു
-        let totalCash = 0;
-let totalGPay = 0;
-let totalCredit = 0;
-
-sales.forEach(s => {
+        sales.forEach(s => {
     if(s.method === 'cash') {
         totalCash += s.total;
     } else if(s.method === 'gpay') {
