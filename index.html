@@ -96,12 +96,11 @@
         <!-- HOME SECTION -->
         <div id="sec-home">
             <div class="stats no-print">
-    <div class="stat-box blue"><h6>Total Cash/G-Pay</h6><h3 id="ds-cash">₹ 0</h3></div>
-    <div class="stat-box red"><h6>Total Credit</h6><h3 id="ds-cred">₹ 0</h3></div>
-    <div class="stat-box purple"><h6>Total Expense</h6><h3 id="ds-exp">₹ 0</h3></div>
-    <div class="stat-box green"><h6>Balance In Hand</h6><h3 id="ds-bal">₹ 0</h3></div>
-</div>
-
+                <div class="stat-box blue admin-only"><h6>Stock Value</h6><h3 id="ds-stock">₹ 0</h3></div>
+                <div class="stat-box green"><h6>Today Sale</h6><h3 id="ds-sale">₹ 0</h3></div>
+                <div class="stat-box red"><h6>Total Credit</h6><h3 id="ds-cred">₹ 0</h3></div>
+                <div class="stat-box purple"><h6>Cash/G-Pay</h6><h3 id="ds-cash">₹ 0</h3></div>
+            </div>
 
             <div id="overdue-section" class="overdue-alert no-print" style="display:none;">
                 <h4 id="overdue-title" style="margin:0 0 10px 0; color:#92400e;">⚠️ Notifications</h4>
@@ -343,43 +342,61 @@
         if(id === 'home' && currentUser === 'admin') updateChart();
     };
 
-        window.refreshUI = () => {
+    window.refreshUI = () => {
         if (!currentUser) return;
         const now = new Date();
         const today = now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear();
-        
-        let totalCashGPay = 0;
-        let totalCredit = 0;
-        let totalExpense = 0;
-        let todaySale = 0;
+        let sVal = 0, todayS = 0, cred = 0, cash = 0;
 
-        // 1. സെയിൽസ് കണക്ക് കൂട്ടുന്നു
-        sales.forEach(s => {
-            if(s.method === 'credit') {
-                totalCredit += s.total;
-            } else {
-                totalCashGPay += s.total;
+        // Notifications logic
+        const overdueList = sales.filter(s => {
+            if (s.method !== 'credit' || s.total <= 0 || !s.timestamp) return false;
+            const saleDate = s.timestamp.toDate();
+            const diffDays = Math.floor((now - saleDate) / (1000 * 60 * 60 * 24));
+            return diffDays >= 5;
+        });
+
+        const overdueDiv = document.getElementById('overdue-section');
+        const listDiv = document.getElementById('overdue-list');
+        listDiv.innerHTML = ""; 
+        const lowItems = inv.filter(i => i.qty <= 5);
+
+        if (overdueList.length > 0 || lowItems.length > 0) {
+            overdueDiv.style.display = 'block';
+            if(overdueList.length > 0) {
+                listDiv.innerHTML += `<h4 style="color:#92400e; margin-top:0;">⚠️ Credit Reminders</h4>`;
+                listDiv.innerHTML += overdueList.map(s => `
+                    <div class="overdue-item">
+                        <span><b>${s.cust}</b> (₹${Math.round(s.total)}) - ${s.date}</span>
+                        <button class="btn-wa" onclick="sendReminder('${s.id}')">Send Reminder</button>
+                    </div>
+                `).join('');
             }
-            if(s.date === today) todaySale += s.total;
-        });
+            if(lowItems.length > 0) {
+                listDiv.innerHTML += `<h4 style="color:red; margin-top:10px;">⚠️ Low Stock Alert</h4>`;
+                lowItems.forEach(i => { listDiv.innerHTML += `<p>${i.name}: <b>Only ${i.qty} left</b></p>`; });
+            }
+        } else { overdueDiv.style.display = 'none'; }
 
-        // 2. എക്സ്പെൻസ് കണക്ക് കൂട്ടുന്നു
-        expenses.forEach(e => {
-            totalExpense += (parseFloat(e.amt) || 0);
-        });
+        // Inventory Table
+        document.getElementById('stock-body').innerHTML = inv.map(i => {
+            if(currentUser === 'admin') sVal += (i.buy * i.qty) || 0;
+            return `<tr>
+                <td>${i.name}</td>
+                <td><b style="color:${i.qty <= 5 ? 'red':'inherit'}">${i.qty}</b></td>
+                <td>${i.retail}</td>
+                <td>
+                    <button class="btn-edit" onclick="editStock('${i.id}')">Edit</button>
+                    <button class="btn-del admin-only" style="display:${currentUser === 'admin' ? 'inline-block':'none'}" onclick="deleteItem('${i.id}')">Del</button>
+                </td>
+            </tr>`;
+        }).join('');
 
-        // 3. കയ്യിലുള്ള ബാക്കി തുക (Cash - Expense)
-        let balanceInHand = totalCashGPay - totalExpense;
-
-        // സ്ക്രീനിലെ ബോക്സുകളിൽ തുക കാണിക്കുന്നു
-        document.getElementById('ds-cash').innerText = "₹ " + Math.round(totalCashGPay).toLocaleString('en-IN');
-        document.getElementById('ds-cred').innerText = "₹ " + Math.round(totalCredit).toLocaleString('en-IN');
-        document.getElementById('ds-exp').innerText = "₹ " + Math.round(totalExpense).toLocaleString('en-IN');
-        document.getElementById('ds-bal').innerText = "₹ " + Math.round(balanceInHand).toLocaleString('en-IN');
-        
-        // അടുത്തിടെ നടന്ന 15 ട്രാൻസാക്ഷനുകൾ കാണിക്കുന്ന ഭാഗം
+        // Transactions List
         const sorted = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
         document.getElementById('recent-list').innerHTML = sorted.slice(0,15).map(s => {
+            if(s.date === today) todayS += s.total;
+            if(s.method === 'credit') cred += s.total; else cash += s.total;
             return `<div class="card" style="border-left: 5px solid ${s.total < 0 ? (s.isCollection ? 'var(--success)' : 'red') : 'var(--accent)'};">
                 <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b> <b>₹${Math.round(s.total)}</b></div>
                 <small>${s.date} | ${s.method} ${s.isCollection ? '(Coll)' : ''} ${s.staff ? '| Staff: '+s.staff : ''}</small>
@@ -392,22 +409,14 @@
             </div>`;
         }).join('');
 
-        if(currentUser === 'admin') updateChart();
-
-        // Stock Table (അഡ്മിൻ പാനലിലെ സ്റ്റോക്ക് ലിസ്റ്റ്)
-        document.getElementById('stock-body').innerHTML = inv.map(i => {
-            return `<tr>
-                <td>${i.name}</td>
-                <td><b style="color:${i.qty <= 5 ? 'red':'inherit'}">${i.qty}</b></td>
-                <td>${i.retail}</td>
-                <td>
-                    <button class="btn-edit" onclick="editStock('${i.id}')">Edit</button>
-                    <button class="btn-del admin-only" style="display:${currentUser === 'admin' ? 'inline-block':'none'}" onclick="deleteItem('${i.id}')">Del</button>
-                </td>
-            </tr>`;
-        }).join('');
+        if(currentUser === 'admin') {
+            document.getElementById('ds-stock').innerText = "₹ " + Math.round(sVal).toLocaleString('en-IN');
+            document.getElementById('ds-sale').innerText = "₹ " + Math.round(todayS).toLocaleString('en-IN');
+            document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString('en-IN');
+            document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
+            updateChart();
+        }
     };
-
 
     // --- STAFF ---
     window.addNewStaff = async () => {
@@ -542,16 +551,13 @@
         ['item-search', 'selected-item-id', 'stock-hint', 'sale-qty'].forEach(i => { if(document.getElementById(i)) document.getElementById(i).value = ''; });
     };
 
-  window.updateCartUI = () => {
+   window.updateCartUI = () => {
     let tax = 0, gst = 0, grand = 0;
     const cartBody = document.getElementById('cart-body');
-    if (!cartBody) return;
+    if(!cartBody) return;
 
-    // ലിസ്റ്റ് തയ്യാറാക്കുന്നു
     cartBody.innerHTML = cart.map((c, i) => {
-        tax += c.base; 
-        gst += c.gstA; 
-        grand += c.total;
+        tax += c.base; gst += c.gstA; grand += c.total;
         return `<tr>
             <td>${i + 1}</td>
             <td>${c.name}</td>
@@ -564,20 +570,19 @@
             </td>
         </tr>`;
     }).join('');
-
-    // തുകകൾ അപ്ഡേറ്റ് ചെയ്യുന്നു
+    
     document.getElementById('tax-amt').innerText = tax.toFixed(2);
     document.getElementById('gst-amt').innerText = gst.toFixed(2);
     document.getElementById('cart-total').innerText = Math.round(grand);
 
-    // പഴയ ബാലൻസ് ഉണ്ടെങ്കിൽ അതും കൂട്ടി ടോട്ടൽ കാണിക്കുന്നു
-    if (window.updateTotalWithOldBal) {
-        window.updateTotalWithOldBal();
-    }
+    // പഴയ ബാലൻസ് ഫങ്ക്ഷൻ ഉണ്ടെങ്കിൽ പ്രവർത്തിക്കാൻ
+    if(window.updateTotalWithOldBal) window.updateTotalWithOldBal();
 };
 
 
- window.finishBill = async () => {
+
+
+    window.finishBill = async () => {
         if(cart.length === 0) return;
         const staff = document.getElementById('staff-name').value;
         if(!staff) return alert("ബില്ല് അടിക്കുന്ന സ്റ്റാഫിനെ തിരഞ്ഞെടുക്കുക!");
