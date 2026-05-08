@@ -593,7 +593,7 @@ window.calculateBalance = () => {
             <td>${c.gstP}%</td>
             <td>${c.total.toFixed(2)}</td>
             <td class="no-print">
-                <button onclick="cart.splice(${i}, 1); window.updateCartUI();" class="btn-del" style="background:#fee2e2; color:#ef4444; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">X</button>
+                <button onclick="window.removeFromCart(${i})" class="btn-del" style="background:#fee2e2; color:#ef4444; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">X</button>
             </td>
         </tr>`;
     }).join('');
@@ -602,14 +602,17 @@ window.calculateBalance = () => {
     document.getElementById('gst-amt').innerText = gst.toFixed(2);
     document.getElementById('cart-total').innerText = Math.round(grand);
 
-    // പഴയ ബാലൻസ് ഫങ്ക്ഷൻ ഉണ്ടെങ്കിൽ പ്രവർത്തിക്കാൻ
     if(window.updateTotalWithOldBal) window.updateTotalWithOldBal();
 };
 
+// ഐറ്റം നീക്കം ചെയ്യാനുള്ള ഫങ്ക്ഷൻ (ഇത് കൂടി ചേർക്കണം)
+window.removeFromCart = (i) => {
+    cart.splice(i, 1);
+    window.updateCartUI();
+};
 
 
-
-    window.finishBill = async () => {
+  window.finishBill = async () => {
         if(cart.length === 0) return;
         const staff = document.getElementById('staff-name').value;
         if(!staff) return alert("ബില്ല് അടിക്കുന്ന സ്റ്റാഫിനെ തിരഞ്ഞെടുക്കുക!");
