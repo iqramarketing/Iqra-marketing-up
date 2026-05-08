@@ -156,15 +156,8 @@
                 </table>
                 <div style="text-align: right; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
                     <p>Taxable Amt: ₹ <span id="tax-amt">0.00</span></p>
-<p>GST Amount: ₹ <span id="gst-amt">0.00</span></p>
-<h2 style="color:var(--accent)">Current Bill: ₹ <span id="cart-total">0</span></h2>
-
-<!-- താഴെ പറയുന്ന പുതിയ വരികൾ ഇവിടെയാണ് വരുന്നത് -->
-<p style="color:var(--danger)">Old Balance: ₹ <span id="display-old-bal">0</span></p>
-<h2 style="color:var(--primary); border-top: 1px dashed #ccc; display: inline-block; padding-top: 5px;">
-    Total Outstanding: ₹ <span id="total-outstanding">0</span>
-</h2>
-
+                    <p>GST Amount: ₹ <span id="gst-amt">0.00</span></p>
+                    <h2 style="color:var(--accent)">Grand Total: ₹ <span id="cart-total">0</span></h2>
                     <p id="bill-staff-display" style="font-size: 0.8rem; opacity: 0.8;"></p>
                 </div>
                 <div class="no-print">
@@ -472,21 +465,12 @@
     };
 
     window.selectCust = (name, bal, type) => {
-    if(type === 'bill') {
-        document.getElementById('cust-name').value = name;
-        const oldBal = Math.round(bal);
-        // ഇവിടെയാണ് പഴയ ബാലൻസ് സ്ക്രീനിൽ കാണിക്കുന്നത്
-        if(document.getElementById('display-old-bal')) {
-            document.getElementById('display-old-bal').innerText = oldBal;
-        }
-        document.getElementById('cust-balance').innerText = "Bal: ₹" + oldBal;
-        
-        const last = sales.filter(s => s.cust === name).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))[0];
-        if(last && last.phone) document.getElementById('cust-phone').value = last.phone;
-        
-        updateTotalWithOldBal(); // ടോട്ടൽ പുതുക്കാൻ
-    } else if(type === 'ret') {
-
+        if(type === 'bill') {
+            document.getElementById('cust-name').value = name;
+            document.getElementById('cust-balance').innerText = "Bal: ₹" + Math.round(bal);
+            const last = sales.filter(s => s.cust === name).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))[0];
+            if(last && last.phone) document.getElementById('cust-phone').value = last.phone;
+        } else if(type === 'ret') {
             document.getElementById('ret-cust').value = name;
         } else {
             document.getElementById('coll-cust').value = name;
@@ -551,36 +535,16 @@
         ['item-search', 'selected-item-id', 'stock-hint', 'sale-qty'].forEach(i => { if(document.getElementById(i)) document.getElementById(i).value = ''; });
     };
 
-   window.updateCartUI = () => {
-    let tax = 0, gst = 0, grand = 0;
-    const cartBody = document.getElementById('cart-body');
-    if(!cartBody) return;
-
-    cartBody.innerHTML = cart.map((c, i) => {
-        tax += c.base; gst += c.gstA; grand += c.total;
-        return `<tr>
-            <td>${i + 1}</td>
-            <td>${c.name}</td>
-            <td>${c.qty}</td>
-            <td>${c.rate}</td>
-            <td>${c.gstP}%</td>
-            <td>${c.total.toFixed(2)}</td>
-            <td class="no-print">
-                <button onclick="cart.splice(${i}, 1); window.updateCartUI();" class="btn-del" style="background:#fee2e2; color:#ef4444; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">X</button>
-            </td>
-        </tr>`;
-    }).join('');
-    
-    document.getElementById('tax-amt').innerText = tax.toFixed(2);
-    document.getElementById('gst-amt').innerText = gst.toFixed(2);
-    document.getElementById('cart-total').innerText = Math.round(grand);
-
-    // പഴയ ബാലൻസ് ഫങ്ക്ഷൻ ഉണ്ടെങ്കിൽ പ്രവർത്തിക്കാൻ
-    if(window.updateTotalWithOldBal) window.updateTotalWithOldBal();
-};
-
-
-
+    window.updateCartUI = () => {
+        let tax = 0, gst = 0, grand = 0;
+        document.getElementById('cart-body').innerHTML = cart.map((c, i) => {
+            tax += c.base; gst += c.gstA; grand += c.total;
+            return `<tr><td>${i + 1}</td><td>${c.name}</td><td>${c.qty}</td><td>${c.rate}</td><td>${c.gstP}%</td><td>${c.total.toFixed(2)}</td><td class="no-print"><button onclick="cart.splice(${i},1);updateCartUI()" class="btn-del">X</button></td></tr>`;
+        }).join('');
+        document.getElementById('tax-amt').innerText = tax.toFixed(2);
+        document.getElementById('gst-amt').innerText = gst.toFixed(2);
+        document.getElementById('cart-total').innerText = Math.round(grand);
+    };
 
     window.finishBill = async () => {
         if(cart.length === 0) return;
@@ -795,18 +759,6 @@
     };
 
     document.addEventListener('click', (e) => { if(!e.target.closest('.search-container')) document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none'); });
-        // ... നിലവിലുള്ള നിങ്ങളുടെ മറ്റ് കോഡുകൾ ഇവിടെ അവസാനിക്കുന്നു ...
-
-    // ഇതിന് താഴെയായി പുതിയ ഫങ്ക്ഷൻ പേസ്റ്റ് ചെയ്യുക
-    window.updateTotalWithOldBal = () => {
-        const currentBill = parseFloat(document.getElementById('cart-total').innerText) || 0;
-        const oldBal = parseFloat(document.getElementById('display-old-bal').innerText) || 0;
-        const totalOut = Math.round(currentBill + oldBal);
-        if(document.getElementById('total-outstanding')) {
-            document.getElementById('total-outstanding').innerText = totalOut;
-        }
-    };
-
 </script>
 </body>
 </html>
