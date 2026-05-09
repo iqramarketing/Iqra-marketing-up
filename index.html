@@ -393,9 +393,33 @@
         }).join('');
 
         // Transactions List
+                // പുതിയ കോഡ് (New Code)
+        let sVal = 0, todayS = 0, cred = 0, cash = 0;
+
+        sales.forEach(s => {
+            const amt = parseFloat(s.total) || 0;
+
+            // ക്രെഡിറ്റ് ലോജിക്: കടം ബില്ലുകൾ പ്ലസ് ആയും, കളക്ഷൻ മൈനസ് ആയും വരും
+            if (s.method === 'credit') {
+                cred += amt; 
+            }
+
+            // ക്യാഷ് ലോജിക്: ക്യാഷ് സെയിൽസും കളക്ഷൻ വഴി കിട്ടുന്ന പണവും കൂട്ടുന്നു
+            if (s.method === 'cash' || s.method === 'gpay' || s.isCollection) {
+                // കളക്ഷൻ പണം നെഗറ്റീവ് ആണെങ്കിൽ അതിനെ പോസിറ്റീവ് ആക്കി മാറ്റുന്നു (Math.abs)
+                cash += Math.abs(amt); 
+            }
+
+            // ഇന്നത്തെ സെയിൽസ് (കളക്ഷൻ ഇതിൽ കൂട്ടില്ല)
+            if (s.date === today && !s.isCollection && !s.isReturn) {
+                todayS += amt;
+            }
+        });
+
+        // ലിസ്റ്റ് കാണിക്കാനുള്ള ബാക്കി ഭാഗം
         const sorted = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
         document.getElementById('recent-list').innerHTML = sorted.slice(0,15).map(s => {
-            if(s.date === today) todayS += s.total;
+
             if(s.method === 'credit') cred += s.total; else cash += s.total;
             return `<div class="card" style="border-left: 5px solid ${s.total < 0 ? (s.isCollection ? 'var(--success)' : 'red') : 'var(--accent)'};">
                 <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b> <b>₹${Math.round(s.total)}</b></div>
