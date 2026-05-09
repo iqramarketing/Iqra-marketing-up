@@ -164,26 +164,16 @@
 <h2 style="color:var(--primary); border-top: 1px dashed #ccc; display: inline-block; padding-top: 5px;">
     Total Outstanding: ₹ <span id="total-outstanding">0</span>
 </h2>
-<h2 style="color:var(--danger); border-top: 1px solid #eee;">
-    Remaining Balance: ₹ <span id="remaining-balance">0</span>
-</h2>
+
                     <p id="bill-staff-display" style="font-size: 0.8rem; opacity: 0.8;"></p>
                 </div>
-                <div class="no-print" style="margin-top:10px;">
-    <div style="margin-bottom:10px;">
-        <input type="number" id="cash-received" placeholder="Received Amount" oninput="calculateBalance()" style="border: 2px solid var(--accent); padding: 12px; width: 100%; border-radius: 8px;">
-    </div>
-    
-    <select id="pay-method" style="width:100%; margin-bottom:10px; padding:10px; border-radius:8px;">
-        <option value="cash">Cash</option>
-        <option value="gpay">G-Pay</option>
-        <option value="credit">Credit</option>
-    </select>
-
-    <button class="btn btn-primary" style="width:100%;" onclick="finishBill()">Save & Print</button>
-    <button class="btn" style="width:100%; background:#6c757d; color:white; margin-top:5px;" onclick="location.reload()">New Bill / Cancel</button>
-</div>
-
+                <div class="no-print">
+                    <select id="pay-method"><option value="cash">Cash</option><option value="gpay">G-Pay</option><option value="credit">Credit</option></select>
+                    <button class="btn btn-primary" style="background:var(--success)" onclick="finishBill()">Save & Print</button>
+                    <button class="btn" style="background:#64748b; color:white; margin-top:10px;" onclick="location.reload()">New Bill / Cancel</button>
+                </div>
+            </div>
+        </div>
 
         <!-- STOCK SECTION -->
         <div id="sec-items" style="display:none">
@@ -504,22 +494,6 @@
         }
         document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none');
     };
-window.calculateBalance = () => {
-    // Total Outstanding-ൽ ഉള്ള തുക എടുക്കുന്നു
-    const totalOutText = document.getElementById('total-outstanding').innerText;
-    const totalOut = parseFloat(totalOutText.replace(/[^\d.-]/g, '')) || 0;
-    
-    // ടൈപ്പ് ചെയ്യുന്ന ക്യാഷ് എടുക്കുന്നു
-    const received = parseFloat(document.getElementById('cash-received').value) || 0;
-    
-    // ബാക്കി തുക കണക്കാക്കുന്നു
-    const remaining = totalOut - received;
-    
-    // സ്ക്രീനിൽ കാണിക്കുന്നു
-    if(document.getElementById('remaining-balance')) {
-        document.getElementById('remaining-balance').innerText = Math.round(remaining);
-    }
-};
 
     window.filterItems = (type) => {
         const inputId = type === 'bill' ? 'item-search' : 'ret-item-search';
