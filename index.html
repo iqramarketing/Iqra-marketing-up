@@ -154,10 +154,27 @@
                     <thead><tr><th>Sl</th> <th>Item</th> <th>Qty</th> <th>Rate</th> <th>GST</th> <th>Total</th> <th class="no-print">X</th></tr></thead>
                     <tbody id="cart-body"></tbody>
                 </table>
-                <div style="text-align: right; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
-                    <p>Taxable Amt: ₹ <span id="tax-amt">0.00</span></p>
-<p>GST Amount: ₹ <span id="gst-amt">0.00</span></p>
-<h2 style="color:var(--accent)">Current Bill: ₹ <span id="cart-total">0</span></h2>
+             
+<div style="text-align: right; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+    <p>Bill Total: ₹ <span id="cart-total">0</span></p>
+    <p style="color:var(--danger)">Old Balance: ₹ <span id="display-old-bal">0</span></p>
+    <h2 style="color:var(--primary); border-top: 1px dashed #ccc; padding-top: 5px;">
+        Total Due: ₹ <span id="total-outstanding">0</span>
+    </h2>
+</div>
+
+<div class="no-print" style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-top: 10px;">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <div>
+            <label style="font-size: 0.8rem; font-weight: bold;">Cash Received (വാങ്ങിയത്)</label>
+            <input type="number" id="cash-received" placeholder="Amount" oninput="calculateChange()" style="margin-bottom:0;">
+        </div>
+        <div style="text-align: center;">
+            <label style="font-size: 0.8rem; font-weight: bold;">Balance Change (ബാക്കി)</label>
+            <h2 id="balance-change" style="margin: 5px 0; color: #059669;">₹ 0</h2>
+        </div>
+    </div>
+</div>
 
 <!-- താഴെ പറയുന്ന പുതിയ വരികൾ ഇവിടെയാണ് വരുന്നത് -->
 <p style="color:var(--danger)">Old Balance: ₹ <span id="display-old-bal">0</span></p>
@@ -579,9 +596,6 @@
     if(window.updateTotalWithOldBal) window.updateTotalWithOldBal();
 };
 
-
-
-
     window.finishBill = async () => {
         if(cart.length === 0) return;
         const staff = document.getElementById('staff-name').value;
@@ -798,14 +812,38 @@
         // ... നിലവിലുള്ള നിങ്ങളുടെ മറ്റ് കോഡുകൾ ഇവിടെ അവസാനിക്കുന്നു ...
 
     // ഇതിന് താഴെയായി പുതിയ ഫങ്ക്ഷൻ പേസ്റ്റ് ചെയ്യുക
-    window.updateTotalWithOldBal = () => {
-        const currentBill = parseFloat(document.getElementById('cart-total').innerText) || 0;
-        const oldBal = parseFloat(document.getElementById('display-old-bal').innerText) || 0;
-        const totalOut = Math.round(currentBill + oldBal);
-        if(document.getElementById('total-outstanding')) {
-            document.getElementById('total-outstanding').innerText = totalOut;
-        }
-    };
+    // പഴയ ബാലൻസും പുതിയ ബില്ലും കൂട്ടി ടോട്ടൽ കാണിക്കാൻ
+window.updateTotalWithOldBal = () => {
+    const currentBill = parseFloat(document.getElementById('cart-total').innerText) || 0;
+    const oldBal = parseFloat(document.getElementById('display-old-bal').innerText) || 0;
+    
+    // ടോട്ടൽ ഔട്ട്സ്റ്റാന്റിംഗ് കണക്കാക്കുന്നു
+    const totalOut = Math.round(currentBill + oldBal);
+    
+    if(document.getElementById('total-outstanding')) {
+        document.getElementById('total-outstanding').innerText = totalOut;
+    }
+    // ക്യാഷ് അടിക്കുമ്പോൾ ബാക്കി കാണിക്കാനുള്ള ഫങ്ക്ഷൻ കൂടി വർക്ക് ചെയ്യിക്കുന്നു
+    calculateChange();
+};
+
+// കയ്യിൽ കിട്ടിയ പണം അനുസരിച്ച് ബാക്കി കണക്കാക്കാൻ
+window.calculateChange = () => {
+    const billTotal = parseFloat(document.getElementById('cart-total').innerText) || 0;
+    const received = parseFloat(document.getElementById('cash-received').value) || 0;
+    
+    // ബാക്കി നൽകാനുള്ള തുക
+    const change = received - billTotal;
+    
+    const changeDisplay = document.getElementById('balance-change');
+    if (received > 0 && change >= 0) {
+        changeDisplay.innerText = "₹ " + Math.round(change);
+        changeDisplay.style.color = "#059669"; // പച്ച നിറം
+    } else {
+        changeDisplay.innerText = "₹ 0";
+        changeDisplay.style.color = "#ef4444"; // ചുവപ്പ് നിറം
+    }
+};
 
 </script>
 </body>
