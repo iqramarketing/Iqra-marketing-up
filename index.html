@@ -156,15 +156,8 @@
                 </table>
                 <div style="text-align: right; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
                     <p>Taxable Amt: ₹ <span id="tax-amt">0.00</span></p>
-<p>GST Amount: ₹ <span id="gst-amt">0.00</span></p>
-<h2 style="color:var(--accent)">Current Bill: ₹ <span id="cart-total">0</span></h2>
-
-<!-- താഴെ പറയുന്ന പുതിയ വരികൾ ഇവിടെയാണ് വരുന്നത് -->
-<p style="color:var(--danger)">Old Balance: ₹ <span id="display-old-bal">0</span></p>
-<h2 style="color:var(--primary); border-top: 1px dashed #ccc; display: inline-block; padding-top: 5px;">
-    Total Outstanding: ₹ <span id="total-outstanding">0</span>
-</h2>
-
+                    <p>GST Amount: ₹ <span id="gst-amt">0.00</span></p>
+                    <h2 style="color:var(--accent)">Grand Total: ₹ <span id="cart-total">0</span></h2>
                     <p id="bill-staff-display" style="font-size: 0.8rem; opacity: 0.8;"></p>
                 </div>
                 <div class="no-print">
@@ -286,11 +279,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const firebaseConfig = { 
-        apiKey: "AIzaSyDmviHo3-oZChgxScf4RTfQ9d8nMNxSgGI", 
-        authDomain: "iqra-marketing.firebaseapp.com", 
-        projectId: "iqra-marketing" 
-    };
+    const firebaseConfig = { apiKey: "AIzaSyDmviHo3-oZChgxScf4RTfQ9d8nMNxSgGI", authDomain: "iqra-marketing.firebaseapp.com", projectId: "iqra-marketing" };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
@@ -310,10 +299,10 @@
         refreshUI();
     }
 
-    // Real-time Data Listeners
     onSnapshot(collection(db, "inventory"), (s) => { inv = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
     onSnapshot(collection(db, "sales"), (s) => { sales = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
     onSnapshot(collection(db, "expenses"), (s) => { expenses = s.docs.map(d => ({ id: d.id, ...d.data() })); renderExpenses(); });
+
     onSnapshot(collection(db, "staffs"), (s) => {
         const staffList = s.docs.map(d => ({ id: d.id, ...d.data() }));
         const select = document.getElementById('staff-name');
@@ -348,7 +337,6 @@
         const today = now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear();
         let sVal = 0, todayS = 0, cred = 0, cash = 0;
 
-        // Notifications logic
         const overdueList = sales.filter(s => {
             if (s.method !== 'credit' || s.total <= 0 || !s.timestamp) return false;
             const saleDate = s.timestamp.toDate();
@@ -359,6 +347,7 @@
         const overdueDiv = document.getElementById('overdue-section');
         const listDiv = document.getElementById('overdue-list');
         listDiv.innerHTML = ""; 
+
         const lowItems = inv.filter(i => i.qty <= 5);
 
         if (overdueList.length > 0 || lowItems.length > 0) {
@@ -378,7 +367,6 @@
             }
         } else { overdueDiv.style.display = 'none'; }
 
-        // Inventory Table
         document.getElementById('stock-body').innerHTML = inv.map(i => {
             if(currentUser === 'admin') sVal += (i.buy * i.qty) || 0;
             return `<tr>
@@ -392,7 +380,6 @@
             </tr>`;
         }).join('');
 
-        // Transactions List
         const sorted = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
         document.getElementById('recent-list').innerHTML = sorted.slice(0,15).map(s => {
             if(s.date === today) todayS += s.total;
@@ -418,16 +405,17 @@
         }
     };
 
-    // --- STAFF ---
     window.addNewStaff = async () => {
         const name = document.getElementById('new-staff-name').value.trim();
         if(!name) return alert("പേര് നൽകുക!");
         await addDoc(collection(db, "staffs"), { name: name });
         document.getElementById('new-staff-name').value = '';
     };
-    window.deleteStaff = async (id) => { if(confirm("ഈ സ്റ്റാഫിനെ നീക്കം ചെയ്യണോ?")) await deleteDoc(doc(db, "staffs", id)); };
 
-    // --- EXPENSES ---
+    window.deleteStaff = async (id) => {
+        if(confirm("ഈ സ്റ്റാഫിനെ നീക്കം ചെയ്യണോ?")) await deleteDoc(doc(db, "staffs", id));
+    };
+
     window.saveExpense = async () => {
         const desc = document.getElementById('exp-desc').value;
         const amt = parseFloat(document.getElementById('exp-amt').value);
@@ -442,6 +430,7 @@
         document.getElementById('exp-desc').value = '';
         document.getElementById('exp-amt').value = '';
     };
+
     function renderExpenses() {
         const list = document.getElementById('expense-list');
         if(!list) return;
@@ -453,18 +442,19 @@
         `).join('');
     }
 
-    // --- SEARCH FILTERS (CUSTOMER & ITEMS) ---
     window.filterCustomers = (type) => {
         const inputId = type === 'bill' ? 'cust-name' : (type === 'ret' ? 'ret-cust' : 'coll-cust');
         const resId = type === 'bill' ? 'cust-results' : (type === 'ret' ? 'ret-cust-results' : 'coll-cust-results');
         const txt = document.getElementById(inputId).value.toLowerCase();
         const resDiv = document.getElementById(resId);
         if(!txt) { resDiv.style.display = 'none'; return; }
+
         const unique = [...new Set(sales.map(s => s.cust))];
         const filtered = unique.filter(c => c.toLowerCase().includes(txt));
+
         resDiv.innerHTML = filtered.map(name => {
             const bal = sales.filter(s => s.cust === name && s.method === 'credit').reduce((a, b) => a + b.total, 0);
-            const coll = sales.filter(s => s.cust === name && (s.isCollection || s.isReturn)).reduce((a, b) => a + Math.abs(b.total), 0);
+            const coll = sales.filter(s => s.cust === name && s.isCollection).reduce((a, b) => a + Math.abs(b.total), 0);
             const finalBal = bal - coll;
             return `<div class="search-item" onclick="selectCust('${name}', ${finalBal}, '${type}')">${name} (Bal: ₹${Math.round(finalBal)})</div>`;
         }).join('');
@@ -472,27 +462,20 @@
     };
 
     window.selectCust = (name, bal, type) => {
-    if(type === 'bill') {
-        document.getElementById('cust-name').value = name;
-        const oldBal = Math.round(bal);
-        // ഇവിടെയാണ് പഴയ ബാലൻസ് സ്ക്രീനിൽ കാണിക്കുന്നത്
-        if(document.getElementById('display-old-bal')) {
-            document.getElementById('display-old-bal').innerText = oldBal;
-        }
-        document.getElementById('cust-balance').innerText = "Bal: ₹" + oldBal;
-        
-        const last = sales.filter(s => s.cust === name).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))[0];
-        if(last && last.phone) document.getElementById('cust-phone').value = last.phone;
-        
-        updateTotalWithOldBal(); // ടോട്ടൽ പുതുക്കാൻ
-    } else if(type === 'ret') {
-
+        if(type === 'bill') {
+            document.getElementById('cust-name').value = name;
+            document.getElementById('cust-balance').innerText = "Bal: ₹" + Math.round(bal);
+            document.getElementById('cust-results').style.display = 'none';
+            const last = sales.filter(s => s.cust === name).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))[0];
+            if(last && last.phone) document.getElementById('cust-phone').value = last.phone;
+        } else if(type === 'ret') {
             document.getElementById('ret-cust').value = name;
+            document.getElementById('ret-cust-results').style.display = 'none';
         } else {
             document.getElementById('coll-cust').value = name;
             document.getElementById('coll-balance').innerText = "Pending: ₹" + Math.round(bal);
+            document.getElementById('coll-cust-results').style.display = 'none';
         }
-        document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none');
     };
 
     window.filterItems = (type) => {
@@ -512,14 +495,14 @@
             document.getElementById('item-search').value = name;
             document.getElementById('selected-item-id').value = id;
             document.getElementById('stock-hint').innerText = `Stock: ${it.qty}`;
+            document.getElementById('search-results').style.display = 'none';
         } else {
             document.getElementById('ret-item-search').value = name;
             document.getElementById('ret-selected-id').value = id;
+            document.getElementById('ret-search-results').style.display = 'none';
         }
-        document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none');
     };
 
-    // --- INVENTORY MANAGEMENT ---
     window.saveItem = async () => {
         const name = document.getElementById('i-name').value.trim();
         const buy = parseFloat(document.getElementById('i-buy').value) || 0;
@@ -536,7 +519,6 @@
         ['i-name', 'i-buy', 'i-qty', 'i-retail', 'i-wholesale'].forEach(id => document.getElementById(id).value = '');
     };
 
-    // --- BILLING LOGIC ---
     window.addToCart = () => {
         const id = document.getElementById('selected-item-id').value;
         const qty = parseFloat(document.getElementById('sale-qty').value);
@@ -551,41 +533,22 @@
         ['item-search', 'selected-item-id', 'stock-hint', 'sale-qty'].forEach(i => { if(document.getElementById(i)) document.getElementById(i).value = ''; });
     };
 
-   window.updateCartUI = () => {
-    let tax = 0, gst = 0, grand = 0;
-    const cartBody = document.getElementById('cart-body');
-    if(!cartBody) return;
-
-    cartBody.innerHTML = cart.map((c, i) => {
-        tax += c.base; gst += c.gstA; grand += c.total;
-        return `<tr>
-            <td>${i + 1}</td>
-            <td>${c.name}</td>
-            <td>${c.qty}</td>
-            <td>${c.rate}</td>
-            <td>${c.gstP}%</td>
-            <td>${c.total.toFixed(2)}</td>
-            <td class="no-print">
-                <button onclick="cart.splice(${i}, 1); window.updateCartUI();" class="btn-del" style="background:#fee2e2; color:#ef4444; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">X</button>
-            </td>
-        </tr>`;
-    }).join('');
-    
-    document.getElementById('tax-amt').innerText = tax.toFixed(2);
-    document.getElementById('gst-amt').innerText = gst.toFixed(2);
-    document.getElementById('cart-total').innerText = Math.round(grand);
-
-    // പഴയ ബാലൻസ് ഫങ്ക്ഷൻ ഉണ്ടെങ്കിൽ പ്രവർത്തിക്കാൻ
-    if(window.updateTotalWithOldBal) window.updateTotalWithOldBal();
-};
-
-
-
+    window.updateCartUI = () => {
+        let tax = 0, gst = 0, grand = 0;
+        document.getElementById('cart-body').innerHTML = cart.map((c, i) => {
+            tax += c.base; gst += c.gstA; grand += c.total;
+            return `<tr><td>${i + 1}</td><td>${c.name}</td><td>${c.qty}</td><td>${c.rate}</td><td>${c.gstP}%</td><td>${c.total.toFixed(2)}</td><td class="no-print"><button onclick="cart.splice(${i},1);updateCartUI()" class="btn-del">X</button></td></tr>`;
+        }).join('');
+        document.getElementById('tax-amt').innerText = tax.toFixed(2);
+        document.getElementById('gst-amt').innerText = gst.toFixed(2);
+        document.getElementById('cart-total').innerText = Math.round(grand);
+    };
 
     window.finishBill = async () => {
         if(cart.length === 0) return;
         const staff = document.getElementById('staff-name').value;
         if(!staff) return alert("ബില്ല് അടിക്കുന്ന സ്റ്റാഫിനെ തിരഞ്ഞെടുക്കുക!");
+
         const editId = document.getElementById('edit-bill-id').value;
         const now = new Date();
         const saleData = {
@@ -611,7 +574,16 @@
         setTimeout(() => { window.print(); location.reload(); }, 1500);
     };
 
-    // --- RETURN & COLLECTION ---
+    window.reprintBill = (id) => {
+        const s = sales.find(x => x.id === id);
+        if(!s) return;
+        document.getElementById('print-bill-meta').innerText = `Cust: ${s.cust} | Staff: ${s.staff || ''} | Date: ${s.date} ${s.time}`;
+        document.getElementById('bill-staff-display').innerText = s.staff ? "Billed by: " + s.staff : "";
+        cart = [...s.items];
+        updateCartUI();
+        setTimeout(() => { window.print(); }, 500);
+    };
+
     window.processReturn = async () => {
         const cust = document.getElementById('ret-cust').value.trim();
         const itemId = document.getElementById('ret-selected-id').value;
@@ -648,7 +620,6 @@
         location.reload(); 
     };
 
-    // --- ADMIN ACTIONS ---
     window.deleteSale = async (id, withPrompt = true) => {
         if(currentUser !== 'admin') return alert("അഡ്മിന് മാത്രമേ ഡിലീറ്റ് ചെയ്യാൻ കഴിയൂ!");
         if(withPrompt && !confirm("ഡിലീറ്റ് ചെയ്യണോ?")) return;
@@ -707,6 +678,7 @@
         if(!selMonth) return;
         const [year, month] = selMonth.split('-');
         const monthKey = parseInt(month) + '-' + year;
+
         let totalSalesProfit = 0;
         sales.filter(s => s.date.includes('/' + parseInt(month) + '/' + year)).forEach(s => {
             if(!s.isCollection && !s.isReturn) {
@@ -717,8 +689,10 @@
                 });
             }
         });
+
         const monthExp = expenses.filter(e => e.month === monthKey).reduce((a, b) => a + b.amt, 0);
         const finalProfit = totalSalesProfit - monthExp;
+
         document.getElementById('profit-display').innerHTML = `
             <p>Gross Profit: <b>₹${Math.round(totalSalesProfit)}</b></p>
             <p>Total Expenses: <b>₹${Math.round(monthExp)}</b></p>
@@ -736,17 +710,6 @@
         a.setAttribute('href', url);
         a.setAttribute('download', 'sales_report.csv');
         a.click();
-    };
-
-    // --- REPRINT & EDIT BILL ---
-    window.reprintBill = (id) => {
-        const s = sales.find(x => x.id === id);
-        if(!s) return;
-        document.getElementById('print-bill-meta').innerText = `Cust: ${s.cust} | Staff: ${s.staff || ''} | Date: ${s.date} ${s.time}`;
-        document.getElementById('bill-staff-display').innerText = s.staff ? "Billed by: " + s.staff : "";
-        cart = [...s.items];
-        updateCartUI();
-        setTimeout(() => { window.print(); }, 500);
     };
 
     window.editBill = (id) => {
@@ -777,7 +740,6 @@
 
     window.deleteItem = async (id) => { if(confirm("ഡിലീറ്റ് ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
     
-    // --- WHATSAPP MESSAGES ---
     window.sendReminder = (id) => {
         const s = sales.find(x => x.id === id);
         if(!s || !s.phone) return alert("ഫോൺ നമ്പർ ഇല്ല!");
@@ -795,18 +757,6 @@
     };
 
     document.addEventListener('click', (e) => { if(!e.target.closest('.search-container')) document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none'); });
-        // ... നിലവിലുള്ള നിങ്ങളുടെ മറ്റ് കോഡുകൾ ഇവിടെ അവസാനിക്കുന്നു ...
-
-    // ഇതിന് താഴെയായി പുതിയ ഫങ്ക്ഷൻ പേസ്റ്റ് ചെയ്യുക
-    window.updateTotalWithOldBal = () => {
-        const currentBill = parseFloat(document.getElementById('cart-total').innerText) || 0;
-        const oldBal = parseFloat(document.getElementById('display-old-bal').innerText) || 0;
-        const totalOut = Math.round(currentBill + oldBal);
-        if(document.getElementById('total-outstanding')) {
-            document.getElementById('total-outstanding').innerText = totalOut;
-        }
-    };
-
 </script>
 </body>
 </html>
