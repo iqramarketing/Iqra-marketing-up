@@ -93,7 +93,6 @@
     </nav>
 
     <div class="container">
-        <!-- HOME SECTION -->
         <div id="sec-home">
             <div class="stats no-print">
                 <div class="stat-box blue admin-only"><h6>Stock Value</h6><h3 id="ds-stock">₹ 0</h3></div>
@@ -115,7 +114,6 @@
             <div id="recent-list"></div>
         </div>
 
-        <!-- BILLING SECTION -->
         <div id="sec-bill" style="display:none">
             <div class="card no-print">
                 <h3 id="bill-title">New Invoice</h3>
@@ -156,18 +154,29 @@
                 </table>
                 <div style="text-align: right; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
                     <p>Taxable Amt: ₹ <span id="tax-amt">0.00</span></p>
-<p>GST Amount: ₹ <span id="gst-amt">0.00</span></p>
-<h2 style="color:var(--accent)">Current Bill: ₹ <span id="cart-total">0</span></h2>
-
-<!-- താഴെ പറയുന്ന പുതിയ വരികൾ ഇവിടെയാണ് വരുന്നത് -->
-<p style="color:var(--danger)">Old Balance: ₹ <span id="display-old-bal">0</span></p>
-<h2 style="color:var(--primary); border-top: 1px dashed #ccc; display: inline-block; padding-top: 5px;">
-    Total Outstanding: ₹ <span id="total-outstanding">0</span>
-</h2>
-
-                    <p id="bill-staff-display" style="font-size: 0.8rem; opacity: 0.8;"></p>
+                    <p>GST Amount: ₹ <span id="gst-amt">0.00</span></p>
+                    <h2 style="color:var(--accent)">Current Bill: ₹ <span id="cart-total">0</span></h2>
+                    <p style="color:var(--danger)">Old Balance: ₹ <span id="display-old-bal">0</span></p>
+                    <h2 style="color:var(--primary); border-top: 1px dashed #ccc; padding-top: 5px;">
+                        Total Outstanding: ₹ <span id="total-outstanding">0</span>
+                    </h2>
                 </div>
-                <div class="no-print">
+
+                <div class="no-print" style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-top: 10px;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: bold;">Cash Received (വാങ്ങിയത്)</label>
+                            <input type="number" id="cash-received" placeholder="Amount" oninput="calculateChange()" style="margin-bottom:0;">
+                        </div>
+                        <div style="text-align: center;">
+                            <label style="font-size: 0.8rem; font-weight: bold;">Balance Change (ബാക്കി)</label>
+                            <h2 id="balance-change" style="margin: 5px 0; color: #ef4444;">₹ 0</h2>
+                        </div>
+                    </div>
+                </div>
+                <p id="bill-staff-display" style="font-size: 0.8rem; opacity: 0.8;"></p>
+                
+                <div class="no-print" style="margin-top:15px;">
                     <select id="pay-method"><option value="cash">Cash</option><option value="gpay">G-Pay</option><option value="credit">Credit</option></select>
                     <button class="btn btn-primary" style="background:var(--success)" onclick="finishBill()">Save & Print</button>
                     <button class="btn" style="background:#64748b; color:white; margin-top:10px;" onclick="location.reload()">New Bill / Cancel</button>
@@ -175,7 +184,6 @@
             </div>
         </div>
 
-        <!-- STOCK SECTION -->
         <div id="sec-items" style="display:none">
             <div class="card">
                 <h3>Manage Stock</h3>
@@ -190,10 +198,22 @@
                 </div>
                 <button class="btn btn-primary" onclick="saveItem()">Save Product</button>
             </div>
-            <div class="card"><table><thead><tr><th>Item</th><th>Stock</th><th>Rate</th><th>Action</th></tr></thead><tbody id="stock-body"></tbody></table></div>
+            <div class="card" style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Stock</th>
+                            <th>Retail Rate</th>
+                            <th>Wholesale Rate</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-body"></tbody>
+                </table>
+            </div>
         </div>
 
-        <!-- STAFF MANAGEMENT SECTION -->
         <div id="sec-staff" style="display:none" class="admin-only">
             <div class="card">
                 <h3>സ്റ്റാഫ് മാനേജ്‌മെന്റ് (Manage Staff)</h3>
@@ -205,14 +225,14 @@
             </div>
         </div>
 
-        <!-- REPORTS SECTION -->
         <div id="sec-report" style="display:none" class="admin-only">
             <div class="card no-print">
-                <h3>Search Reports</h3>
+                <h3>Search Reports (പഴയ ബില്ലുകൾ തിരയാൻ)</h3>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <input type="date" id="filter-date" onchange="filterReports()">
-                    <input type="text" id="filter-name" placeholder="Customer Name..." oninput="filterReports()">
+                    <input type="date" id="filter-date">
+                    <input type="text" id="filter-name" placeholder="Customer Name (കൃത്യമായ പേര്)...">
                 </div>
+                <button class="btn btn-primary" style="margin-top:10px; background: var(--accent);" onclick="filterReports()">🔍 ബില്ല് തിരയുക (Search)</button>
                 <button class="btn" style="background:#64748b; color:white; margin-top:10px;" onclick="exportToExcel()">Export Sales to Excel (CSV)</button>
             </div>
             <div id="report-summary" class="card" style="display:none; border-left: 5px solid var(--success);">
@@ -223,7 +243,6 @@
             <div id="filtered-sales-list"></div>
         </div>
 
-        <!-- EXPENSE SECTION -->
         <div id="sec-expense" style="display:none" class="admin-only">
             <div class="card">
                 <h3>Daily Expenses (ചെലവുകൾ)</h3>
@@ -234,7 +253,6 @@
             <div id="expense-list"></div>
         </div>
 
-        <!-- PROFIT SECTION -->
         <div id="sec-profit" style="display:none" class="admin-only">
             <div class="card">
                 <h3>Profit & Loss Report</h3>
@@ -243,7 +261,6 @@
             </div>
         </div>
 
-        <!-- RETURN SECTION -->
         <div id="sec-return" style="display:none">
             <div class="card">
                 <h3>Sales Return (തിരികെ എടുക്കൽ)</h3>
@@ -265,7 +282,6 @@
             </div>
         </div>
 
-        <!-- COLLECTION SECTION -->
         <div id="sec-collection" style="display:none">
             <div class="card">
                 <h3>Credit Collection (കടം വാങ്ങൽ)</h3>
@@ -335,10 +351,14 @@
     window.tab = (id) => {
         const adminTabs = ['report', 'expense', 'profit', 'staff'];
         if(adminTabs.includes(id) && currentUser !== 'admin') return alert("അഡ്മിന് മാത്രമേ ഇത് കാണാൻ കഴിയൂ!");
+        
         document.querySelectorAll('.container > div').forEach(d => d.style.display = 'none');
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('sec-'+id).style.display = 'block';
-        if(document.getElementById('btn-'+id)) document.getElementById('btn-'+id).classList.add('active');
+        
+        const targetSec = document.getElementById('sec-' + id);
+        if(targetSec) targetSec.style.display = 'block';
+        
+        if(document.getElementById('btn-' + id)) document.getElementById('btn-' + id).classList.add('active');
         if(id === 'home' && currentUser === 'admin') updateChart();
     };
 
@@ -348,7 +368,6 @@
         const today = now.getDate() + '/' + (now.getMonth() + 1) + '/' + now.getFullYear();
         let sVal = 0, todayS = 0, cred = 0, cash = 0;
 
-        // Notifications logic
         const overdueList = sales.filter(s => {
             if (s.method !== 'credit' || s.total <= 0 || !s.timestamp) return false;
             const saleDate = s.timestamp.toDate();
@@ -378,13 +397,14 @@
             }
         } else { overdueDiv.style.display = 'none'; }
 
-        // Inventory Table
+        // പുതിയ മാറ്റം വരുത്തിയ ഇൻവെന്ററി ലിസ്റ്റ് (റീറ്റെയിലും ഹോൾസെയിലും ഒരുമിച്ച് കാണിക്കാൻ)
         document.getElementById('stock-body').innerHTML = inv.map(i => {
             if(currentUser === 'admin') sVal += (i.buy * i.qty) || 0;
             return `<tr>
                 <td>${i.name}</td>
                 <td><b style="color:${i.qty <= 5 ? 'red':'inherit'}">${i.qty}</b></td>
-                <td>${i.retail}</td>
+                <td style="color: var(--accent); font-weight: bold;">₹${i.retail || 0}</td>
+                <td style="color: var(--success); font-weight: bold;">₹${i.wholesale || i.retail || 0}</td>
                 <td>
                     <button class="btn-edit" onclick="editStock('${i.id}')">Edit</button>
                     <button class="btn-del admin-only" style="display:${currentUser === 'admin' ? 'inline-block':'none'}" onclick="deleteItem('${i.id}')">Del</button>
@@ -392,7 +412,6 @@
             </tr>`;
         }).join('');
 
-        // Transactions List
         const sorted = [...sales].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
         document.getElementById('recent-list').innerHTML = sorted.slice(0,15).map(s => {
             if(s.date === today) todayS += s.total;
@@ -418,7 +437,6 @@
         }
     };
 
-    // --- STAFF ---
     window.addNewStaff = async () => {
         const name = document.getElementById('new-staff-name').value.trim();
         if(!name) return alert("പേര് നൽകുക!");
@@ -427,7 +445,6 @@
     };
     window.deleteStaff = async (id) => { if(confirm("ഈ സ്റ്റാഫിനെ നീക്കം ചെയ്യണോ?")) await deleteDoc(doc(db, "staffs", id)); };
 
-    // --- EXPENSES ---
     window.saveExpense = async () => {
         const desc = document.getElementById('exp-desc').value;
         const amt = parseFloat(document.getElementById('exp-amt').value);
@@ -453,7 +470,6 @@
         `).join('');
     }
 
-    // --- SEARCH FILTERS (CUSTOMER & ITEMS) ---
     window.filterCustomers = (type) => {
         const inputId = type === 'bill' ? 'cust-name' : (type === 'ret' ? 'ret-cust' : 'coll-cust');
         const resId = type === 'bill' ? 'cust-results' : (type === 'ret' ? 'ret-cust-results' : 'coll-cust-results');
@@ -472,21 +488,19 @@
     };
 
     window.selectCust = (name, bal, type) => {
-    if(type === 'bill') {
-        document.getElementById('cust-name').value = name;
-        const oldBal = Math.round(bal);
-        // ഇവിടെയാണ് പഴയ ബാലൻസ് സ്ക്രീനിൽ കാണിക്കുന്നത്
-        if(document.getElementById('display-old-bal')) {
-            document.getElementById('display-old-bal').innerText = oldBal;
-        }
-        document.getElementById('cust-balance').innerText = "Bal: ₹" + oldBal;
-        
-        const last = sales.filter(s => s.cust === name).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))[0];
-        if(last && last.phone) document.getElementById('cust-phone').value = last.phone;
-        
-        updateTotalWithOldBal(); // ടോട്ടൽ പുതുക്കാൻ
-    } else if(type === 'ret') {
-
+        if(type === 'bill') {
+            document.getElementById('cust-name').value = name;
+            const oldBal = Math.round(bal);
+            if(document.getElementById('display-old-bal')) {
+                document.getElementById('display-old-bal').innerText = oldBal;
+            }
+            document.getElementById('cust-balance').innerText = "Bal: ₹" + oldBal;
+            
+            const last = sales.filter(s => s.cust === name).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))[0];
+            if(last && last.phone) document.getElementById('cust-phone').value = last.phone;
+            
+            updateTotalWithOldBal();
+        } else if(type === 'ret') {
             document.getElementById('ret-cust').value = name;
         } else {
             document.getElementById('coll-cust').value = name;
@@ -519,7 +533,6 @@
         document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none');
     };
 
-    // --- INVENTORY MANAGEMENT ---
     window.saveItem = async () => {
         const name = document.getElementById('i-name').value.trim();
         const buy = parseFloat(document.getElementById('i-buy').value) || 0;
@@ -536,7 +549,6 @@
         ['i-name', 'i-buy', 'i-qty', 'i-retail', 'i-wholesale'].forEach(id => document.getElementById(id).value = '');
     };
 
-    // --- BILLING LOGIC ---
     window.addToCart = () => {
         const id = document.getElementById('selected-item-id').value;
         const qty = parseFloat(document.getElementById('sale-qty').value);
@@ -551,36 +563,32 @@
         ['item-search', 'selected-item-id', 'stock-hint', 'sale-qty'].forEach(i => { if(document.getElementById(i)) document.getElementById(i).value = ''; });
     };
 
-   window.updateCartUI = () => {
-    let tax = 0, gst = 0, grand = 0;
-    const cartBody = document.getElementById('cart-body');
-    if(!cartBody) return;
+    window.updateCartUI = () => {
+        let tax = 0, gst = 0, grand = 0;
+        const cartBody = document.getElementById('cart-body');
+        if(!cartBody) return;
 
-    cartBody.innerHTML = cart.map((c, i) => {
-        tax += c.base; gst += c.gstA; grand += c.total;
-        return `<tr>
-            <td>${i + 1}</td>
-            <td>${c.name}</td>
-            <td>${c.qty}</td>
-            <td>${c.rate}</td>
-            <td>${c.gstP}%</td>
-            <td>${c.total.toFixed(2)}</td>
-            <td class="no-print">
-                <button onclick="cart.splice(${i}, 1); window.updateCartUI();" class="btn-del" style="background:#fee2e2; color:#ef4444; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">X</button>
-            </td>
-        </tr>`;
-    }).join('');
-    
-    document.getElementById('tax-amt').innerText = tax.toFixed(2);
-    document.getElementById('gst-amt').innerText = gst.toFixed(2);
-    document.getElementById('cart-total').innerText = Math.round(grand);
+        cartBody.innerHTML = cart.map((c, i) => {
+            tax += c.base; gst += c.gstA; grand += c.total;
+            return `<tr>
+                <td>${i + 1}</td>
+                <td>${c.name}</td>
+                <td>${c.qty}</td>
+                <td>${c.rate}</td>
+                <td>${c.gstP}%</td>
+                <td>${c.total.toFixed(2)}</td>
+                <td class="no-print">
+                    <button onclick="cart.splice(${i}, 1); window.updateCartUI();" class="btn-del" style="background:#fee2e2; color:#ef4444; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">X</button>
+                </td>
+            </tr>`;
+        }).join('');
+        
+        document.getElementById('tax-amt').innerText = tax.toFixed(2);
+        document.getElementById('gst-amt').innerText = gst.toFixed(2);
+        document.getElementById('cart-total').innerText = Math.round(grand);
 
-    // പഴയ ബാലൻസ് ഫങ്ക്ഷൻ ഉണ്ടെങ്കിൽ പ്രവർത്തിക്കാൻ
-    if(window.updateTotalWithOldBal) window.updateTotalWithOldBal();
-};
-
-
-
+        if(window.updateTotalWithOldBal) window.updateTotalWithOldBal();
+    };
 
     window.finishBill = async () => {
         if(cart.length === 0) return;
@@ -611,7 +619,6 @@
         setTimeout(() => { window.print(); location.reload(); }, 1500);
     };
 
-    // --- RETURN & COLLECTION ---
     window.processReturn = async () => {
         const cust = document.getElementById('ret-cust').value.trim();
         const itemId = document.getElementById('ret-selected-id').value;
@@ -648,7 +655,6 @@
         location.reload(); 
     };
 
-    // --- ADMIN ACTIONS ---
     window.deleteSale = async (id, withPrompt = true) => {
         if(currentUser !== 'admin') return alert("അഡ്മിന് മാത്രമേ ഡിലീറ്റ് ചെയ്യാൻ കഴിയൂ!");
         if(withPrompt && !confirm("ഡിലീറ്റ് ചെയ്യണോ?")) return;
@@ -684,22 +690,84 @@
         });
     };
 
-    window.filterReports = () => {
+    // --- REPORTS & OLD BILL SEARCH (പുതുക്കിയത് - ഡാറ്റാബേസിൽ നിന്ന് നേരിട്ട് സെർച്ച് ചെയ്യാൻ) ---
+    window.filterReports = async () => {
         const d = document.getElementById('filter-date').value;
-        const n = document.getElementById('filter-name').value.toLowerCase();
+        const n = document.getElementById('filter-name').value.trim();
+        const listDiv = document.getElementById('filtered-sales-list');
+        
+        if(!d && !n) {
+            alert("ദയവായി തീയതിയോ കസ്റ്റമറുടെ പേരോ നൽകുക!");
+            return;
+        }
+
+        listDiv.innerHTML = "<p style='text-align:center;'>ഡാറ്റാബേസിൽ നിന്ന് പഴയ ബില്ലുകൾ തിരയുന്നു... ദയവായി കാത്തിരിക്കുക...</p>";
+        
         let fDate = "";
-        if(d) { const p = d.split('-'); fDate = `${parseInt(p[2])}/${parseInt(p[1])}/${p[0]}`; }
-        const filtered = sales.filter(s => (fDate ? s.date === fDate : true) && (n ? s.cust.toLowerCase().includes(n) : true));
-        document.getElementById('filtered-sales-list').innerHTML = filtered.map(s => `
-            <div class="card">
-                <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b><b>₹${Math.round(s.total)}</b></div>
-                <small>${s.date} | ${s.method} ${s.staff ? '| Staff: '+s.staff : ''}</small>
-            </div>`).join('');
-        if(n || d) {
+        if(d) { 
+            const p = d.split('-'); 
+            fDate = `${parseInt(p[2])}/${parseInt(p[1])}/${p[0]}`; 
+        }
+
+        try {
+            const { query, collection, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+            
+            let salesRef = collection(db, "sales");
+            let q;
+            
+            if (n) {
+                q = query(salesRef, where("cust", "==", n));
+            } else if (fDate) {
+                q = query(salesRef, where("date", "==", fDate));
+            }
+
+            const querySnapshot = await getDocs(q);
+            let filtered = [];
+            querySnapshot.forEach((doc) => {
+                filtered.push({ id: doc.id, ...doc.data() });
+            });
+
+            if (n && fDate) {
+                filtered = filtered.filter(s => s.date === fDate);
+            }
+
+            if(filtered.length === 0) {
+                listDiv.innerHTML = "<p style='text-align:center; color:red; font-weight:bold;'>ബില്ലുകൾ ഒന്നും കണ്ടെത്താനായില്ല! പേര് കൃത്യമായി അടിക്കുക (Capital/Small letters ശ്രദ്ധിക്കുക).</p>";
+                document.getElementById('report-summary').style.display = 'none';
+                return;
+            }
+
+            listDiv.innerHTML = filtered.map(s => {
+                let itemsSummary = s.items ? s.items.map(it => `• ${it.name} (${it.qty} Qty) - ₹${it.total}`).join('<br>') : 'No items';
+                
+                return `
+                <div class="card" style="border-left: 5px solid ${s.total < 0 ? 'var(--success)' : 'var(--accent)'}; margin-bottom:15px; padding:15px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <b style="font-size:1.1rem; color:var(--primary);">${s.cust}</b> <br>
+                            <small style="color:#64748b;">തീയതി: ${s.date} ${s.time || ''} | രീതി: ${s.method.toUpperCase()}</small>
+                        </div>
+                        <b style="font-size:1.2rem; color:${s.total < 0 ? 'green':'var(--accent)'}">₹${Math.round(s.total)}</b>
+                    </div>
+                    <div style="font-size:0.9rem; margin:10px 0; background:#f8fafc; padding:10px; border-radius:8px; color:#475569; border:1px solid #e2e8f0; line-height:1.5;">
+                        <b style="color:var(--primary);">വാങ്ങിയ സാധനങ്ങൾ:</b><br>
+                        ${itemsSummary}
+                    </div>
+                    <div class="no-print">
+                        <button class="btn-edit" onclick="reprintBill('${s.id}')">🖨️ Re-Print Bill</button>
+                        <button class="btn-wa" onclick="sendWA('${s.id}')">WhatsApp വഴി അയക്കുക</button>
+                    </div>
+                </div>`;
+            }).join('');
+            
             document.getElementById('report-summary').style.display = 'block';
             document.getElementById('res-total').innerText = Math.round(filtered.reduce((a, b) => a + b.total, 0));
             document.getElementById('res-name').innerText = n ? n.toUpperCase() : "Sales Report";
-        } else { document.getElementById('report-summary').style.display = 'none'; }
+
+        } catch (error) {
+            console.error("Error searching bills: ", error);
+            listDiv.innerHTML = "<p style='text-align:center; color:red;'>ബില്ല് തിരയുന്നതിൽ തകരാർ സംഭവിച്ചു!</p>";
+        }
     };
 
     window.showProfitReport = () => {
@@ -738,11 +806,10 @@
         a.click();
     };
 
-    // --- REPRINT & EDIT BILL ---
     window.reprintBill = (id) => {
         const s = sales.find(x => x.id === id);
-        if(!s) return;
-        document.getElementById('print-bill-meta').innerText = `Cust: ${s.cust} | Staff: ${s.staff || ''} | Date: ${s.date} ${s.time}`;
+        if(!s) return alert("ബില്ല് കണ്ടെത്താൻ കഴിഞ്ഞില്ല!");
+        document.getElementById('print-bill-meta').innerText = `Cust: ${s.cust} | Staff: ${s.staff || ''} | Date: ${s.date} ${s.time || ''}`;
         document.getElementById('bill-staff-display').innerText = s.staff ? "Billed by: " + s.staff : "";
         cart = [...s.items];
         updateCartUI();
@@ -777,7 +844,6 @@
 
     window.deleteItem = async (id) => { if(confirm("ഡിലീറ്റ് ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
     
-    // --- WHATSAPP MESSAGES ---
     window.sendReminder = (id) => {
         const s = sales.find(x => x.id === id);
         if(!s || !s.phone) return alert("ഫോൺ നമ്പർ ഇല്ല!");
@@ -795,15 +861,29 @@
     };
 
     document.addEventListener('click', (e) => { if(!e.target.closest('.search-container')) document.querySelectorAll('.search-results').forEach(r => r.style.display = 'none'); });
-        // ... നിലവിലുള്ള നിങ്ങളുടെ മറ്റ് കോഡുകൾ ഇവിടെ അവസാനിക്കുന്നു ...
 
-    // ഇതിന് താഴെയായി പുതിയ ഫങ്ക്ഷൻ പേസ്റ്റ് ചെയ്യുക
     window.updateTotalWithOldBal = () => {
         const currentBill = parseFloat(document.getElementById('cart-total').innerText) || 0;
         const oldBal = parseFloat(document.getElementById('display-old-bal').innerText) || 0;
         const totalOut = Math.round(currentBill + oldBal);
         if(document.getElementById('total-outstanding')) {
             document.getElementById('total-outstanding').innerText = totalOut;
+        }
+        calculateChange(); 
+    };
+
+    window.calculateChange = () => {
+        const billTotal = parseFloat(document.getElementById('cart-total').innerText) || 0;
+        const received = parseFloat(document.getElementById('cash-received').value) || 0;
+        const change = received - billTotal;
+        const changeDisplay = document.getElementById('balance-change');
+        
+        if (received > 0 && change >= 0) {
+            changeDisplay.innerText = "₹ " + Math.round(change);
+            changeDisplay.style.color = "#059669"; 
+        } else {
+            changeDisplay.innerText = "₹ 0";
+            changeDisplay.style.color = "#ef4444"; 
         }
     };
 
