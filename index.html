@@ -323,12 +323,12 @@
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         if (currentUser === "admin") document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-        refreshUI();
+        window.refreshUI();
     }
 
     // Real-time Data Listeners
-    onSnapshot(collection(db, "inventory"), (s) => { inv = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
-    onSnapshot(collection(db, "sales"), (s) => { sales = s.docs.map(d => ({ id: d.id, ...d.data() })); refreshUI(); });
+    onSnapshot(collection(db, "inventory"), (s) => { inv = s.docs.map(d => ({ id: d.id, ...d.data() })); window.refreshUI(); });
+    onSnapshot(collection(db, "sales"), (s) => { sales = s.docs.map(d => ({ id: d.id, ...d.data() })); window.refreshUI(); });
     onSnapshot(collection(db, "expenses"), (s) => { expenses = s.docs.map(d => ({ id: d.id, ...d.data() })); renderExpenses(); });
     onSnapshot(collection(db, "staffs"), (s) => {
         const staffList = s.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -359,7 +359,7 @@
         if(targetSec) targetSec.style.display = 'block';
         
         if(document.getElementById('btn-' + id)) document.getElementById('btn-' + id).classList.add('active');
-        if(id === 'home' && currentUser === 'admin') updateChart();
+        if(id === 'home' && currentUser === 'admin') window.updateChart();
     };
 
     window.refreshUI = () => {
@@ -377,12 +377,12 @@
 
         const overdueDiv = document.getElementById('overdue-section');
         const listDiv = document.getElementById('overdue-list');
-        listDiv.innerHTML = ""; 
+        if (listDiv) listDiv.innerHTML = ""; 
         const lowItems = inv.filter(i => i.qty <= 5);
 
         if (overdueList.length > 0 || lowItems.length > 0) {
-            overdueDiv.style.display = 'block';
-            if(overdueList.length > 0) {
+            if (overdueDiv) overdueDiv.style.display = 'block';
+            if(overdueList.length > 0 && listDiv) {
                 listDiv.innerHTML += `<h4 style="color:#92400e; margin-top:0;">⚠️ Credit Reminders</h4>`;
                 listDiv.innerHTML += overdueList.map(s => `
                     <div class="overdue-item">
@@ -391,13 +391,12 @@
                     </div>
                 `).join('');
             }
-            if(lowItems.length > 0) {
+            if(lowItems.length > 0 && listDiv) {
                 listDiv.innerHTML += `<h4 style="color:red; margin-top:10px;">⚠️ Low Stock Alert</h4>`;
                 lowItems.forEach(i => { listDiv.innerHTML += `<p>${i.name}: <b>Only ${i.qty} left</b></p>`; });
             }
-        } else { overdueDiv.style.display = 'none'; }
+        } else { if (overdueDiv) overdueDiv.style.display = 'none'; }
 
-        // പുതിയ മാറ്റം വരുത്തിയ ഇൻവെന്ററി ലിസ്റ്റ് (റീറ്റെയിലും ഹോൾസെയിലും ഒരുമിച്ച് കാണിക്കാൻ)
         document.getElementById('stock-body').innerHTML = inv.map(i => {
             if(currentUser === 'admin') sVal += (i.buy * i.qty) || 0;
             return `<tr>
@@ -433,7 +432,7 @@
             document.getElementById('ds-sale').innerText = "₹ " + Math.round(todayS).toLocaleString('en-IN');
             document.getElementById('ds-cred').innerText = "₹ " + Math.round(cred).toLocaleString('en-IN');
             document.getElementById('ds-cash').innerText = "₹ " + Math.round(cash).toLocaleString('en-IN');
-            updateChart();
+            window.updateChart();
         }
     };
 
@@ -459,6 +458,7 @@
         document.getElementById('exp-desc').value = '';
         document.getElementById('exp-amt').value = '';
     };
+    
     function renderExpenses() {
         const list = document.getElementById('expense-list');
         if(!list) return;
@@ -499,7 +499,7 @@
             const last = sales.filter(s => s.cust === name).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))[0];
             if(last && last.phone) document.getElementById('cust-phone').value = last.phone;
             
-            updateTotalWithOldBal();
+            window.updateTotalWithOldBal();
         } else if(type === 'ret') {
             document.getElementById('ret-cust').value = name;
         } else {
@@ -559,7 +559,7 @@
         const base = rate * qty;
         const gstA = (base * gstP) / 100;
         cart.push({ invId: id, name: it.name, qty, rate, base, gstA, gstP, total: base + gstA });
-        updateCartUI();
+        window.updateCartUI();
         ['item-search', 'selected-item-id', 'stock-hint', 'sale-qty'].forEach(i => { if(document.getElementById(i)) document.getElementById(i).value = ''; });
     };
 
@@ -607,7 +607,7 @@
             time: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
             timestamp: serverTimestamp()
         };
-        if(editId) await deleteSale(editId, false);
+        if(editId) await window.deleteSale(editId, false);
         const docRef = await addDoc(collection(db, "sales"), saleData);
         for(let c of cart) {
             const it = inv.find(i => i.id === c.invId);
@@ -615,7 +615,7 @@
         }
         document.getElementById('print-bill-meta').innerText = `Cust: ${saleData.cust} | Staff: ${staff} | Date: ${saleData.date}`;
         document.getElementById('bill-staff-display').innerText = "Billed by: " + staff;
-        if(confirm("WhatsApp വഴി ബില്ല് അയക്കണോ?")) { setTimeout(() => sendWA(docRef.id), 500); }
+        if(confirm("WhatsApp വഴി ബില്ല് അയക്കണോ?")) { setTimeout(() => window.sendWA(docRef.id), 500); }
         setTimeout(() => { window.print(); location.reload(); }, 1500);
     };
 
@@ -690,7 +690,6 @@
         });
     };
 
-    // --- REPORTS & OLD BILL SEARCH (പുതുക്കിയത് - ഡാറ്റാബേസിൽ നിന്ന് നേരിട്ട് സെർച്ച് ചെയ്യാൻ) ---
     window.filterReports = async () => {
         const d = document.getElementById('filter-date').value;
         const n = document.getElementById('filter-name').value.trim();
@@ -710,9 +709,9 @@
         }
 
         try {
-            const { query, collection, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+            const { query, collection: fCollection, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
             
-            let salesRef = collection(db, "sales");
+            let salesRef = fCollection(db, "sales");
             let q;
             
             if (n) {
@@ -810,23 +809,24 @@
         const s = sales.find(x => x.id === id);
         if(!s) return alert("ബില്ല് കണ്ടെത്താൻ കഴിഞ്ഞില്ല!");
         document.getElementById('print-bill-meta').innerText = `Cust: ${s.cust} | Staff: ${s.staff || ''} | Date: ${s.date} ${s.time || ''}`;
-        document.getElementById('bill-staff-display').innerText = s.staff ? "Billed by: " + s.staff : "";
+        const staffDisplay = document.getElementById('bill-staff-display');
+        if (staffDisplay) staffDisplay.innerText = s.staff ? "Billed by: " + s.staff : "";
         cart = [...s.items];
-        updateCartUI();
+        window.updateCartUI();
         setTimeout(() => { window.print(); }, 500);
     };
 
     window.editBill = (id) => {
         const s = sales.find(x => x.id === id);
         if(!s) return;
-        tab('bill');
+        window.tab('bill');
         document.getElementById('edit-bill-id').value = id;
         document.getElementById('cust-name').value = s.cust;
         document.getElementById('cust-phone').value = s.phone || "";
         document.getElementById('pay-method').value = s.method;
         if(s.staff) document.getElementById('staff-name').value = s.staff;
         cart = [...s.items];
-        updateCartUI();
+        window.updateCartUI();
         document.getElementById('bill-title').innerText = "Edit Invoice";
     };
 
@@ -839,7 +839,7 @@
         document.getElementById('i-wholesale').value = it.wholesale || 0;
         document.getElementById('i-qty').value = 0; 
         window.scrollTo({top: 0, behavior: 'smooth'});
-        tab('items');
+        window.tab('items');
     };
 
     window.deleteItem = async (id) => { if(confirm("ഡിലീറ്റ് ചെയ്യണോ?")) await deleteDoc(doc(db, "inventory", id)); };
@@ -869,7 +869,7 @@
         if(document.getElementById('total-outstanding')) {
             document.getElementById('total-outstanding').innerText = totalOut;
         }
-        calculateChange(); 
+        window.calculateChange(); 
     };
 
     window.calculateChange = () => {
@@ -878,12 +878,14 @@
         const change = received - billTotal;
         const changeDisplay = document.getElementById('balance-change');
         
-        if (received > 0 && change >= 0) {
-            changeDisplay.innerText = "₹ " + Math.round(change);
-            changeDisplay.style.color = "#059669"; 
-        } else {
-            changeDisplay.innerText = "₹ 0";
-            changeDisplay.style.color = "#ef4444"; 
+        if (changeDisplay) {
+            if (received > 0 && change >= 0) {
+                changeDisplay.innerText = "₹ " + Math.round(change);
+                changeDisplay.style.color = "#059669"; 
+            } else {
+                changeDisplay.innerText = "₹ 0";
+                changeDisplay.style.color = "#ef4444"; 
+            }
         }
     };
 
