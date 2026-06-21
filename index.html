@@ -563,6 +563,7 @@
         ['item-search', 'selected-item-id', 'stock-hint', 'sale-qty'].forEach(i => { if(document.getElementById(i)) document.getElementById(i).value = ''; });
     };
 
+    // ഈ ഭാഗമാണ് പ്രധാനമായും ശരിയാക്കിയത് (X മാർക്കിലെ ഡിലീറ്റ് ഫങ്ഷൻ ലോജിക് ഉറപ്പുവരുത്തി)
     window.updateCartUI = () => {
         let tax = 0, gst = 0, grand = 0;
         const cartBody = document.getElementById('cart-body');
@@ -578,7 +579,7 @@
                 <td>${c.gstP}%</td>
                 <td>${c.total.toFixed(2)}</td>
                 <td class="no-print">
-                    <button onclick="cart.splice(${i}, 1); window.updateCartUI();" class="btn-del" style="background:#fee2e2; color:#ef4444; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">X</button>
+                    <button onclick="if(confirm('ഈ ഐറ്റം ലിസ്റ്റിൽ നിന്ന് നീക്കം ചെയ്യണോ?')) { cart.splice(${i}, 1); window.updateCartUI(); }" class="btn-del" style="background:#fee2e2; color:#ef4444; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-weight:bold;">X</button>
                 </td>
             </tr>`;
         }).join('');
