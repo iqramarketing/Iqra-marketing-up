@@ -158,21 +158,30 @@
                     <p>GST Amount: ₹ <span id="gst-amt">0.00</span></p>
                     <h2 style="color:var(--accent)">Current Bill: ₹ <span id="cart-total">0</span></h2>
                     <p style="color:var(--danger)">Old Balance: ₹ <span id="display-old-bal">0</span></p>
+                    
+                    <!-- ഡിസ്കൗണ്ട് വിവരങ്ങൾ കാണിക്കുന്ന ഭാഗം -->
+                    <p id="display-discount-row" style="color:var(--success); display:none;">Discount: - ₹ <span id="display-discount-amt">0</span></p>
+                    
                     <h2 style="color:var(--primary); border-top: 1px dashed #ccc; padding-top: 5px;">
                         Total Outstanding: ₹ <span id="total-outstanding">0</span>
                     </h2>
                 </div>
 
                 <div class="no-print" style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-top: 10px;">
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 10px;">
+                        <!-- ഡിസ്കൗണ്ട് നൽകാനുള്ള ഇൻപുട്ട് ഫീൽഡ് -->
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: bold; color: var(--success);">Discount Amt (ഡിസ്കൗണ്ട്)</label>
+                            <input type="number" id="bill-discount" placeholder="Discount ₹" value="0" oninput="window.updateTotalWithOldBal()" style="margin-bottom:0; border-color: var(--success);">
+                        </div>
                         <div>
                             <label style="font-size: 0.8rem; font-weight: bold;">Cash Received (വാങ്ങിയത്)</label>
                             <input type="number" id="cash-received" placeholder="Amount" oninput="calculateChange()" style="margin-bottom:0;">
                         </div>
-                        <div style="text-align: center;">
-                            <label style="font-size: 0.8rem; font-weight: bold;">Balance Change (ബാക്കി)</label>
-                            <h2 id="balance-change" style="margin: 5px 0; color: #ef4444;">₹ 0</h2>
-                        </div>
+                    </div>
+                    <div style="text-align: center; border-top: 1px solid #ddd; padding-top: 10px;">
+                        <label style="font-size: 0.8rem; font-weight: bold;">Balance Change (ബാക്കി നൽകാൻ)</label>
+                        <h2 id="balance-change" style="margin: 5px 0; color: #ef4444;">₹ 0</h2>
                     </div>
                 </div>
                 <p id="bill-staff-display" style="font-size: 0.8rem; opacity: 0.8;"></p>
@@ -348,7 +357,6 @@
         window.refreshUI();
     }
 
-    // Real-time Data Listeners
     onSnapshot(collection(db, "inventory"), (s) => { inv = s.docs.map(d => ({ id: d.id, ...d.data() })); window.refreshUI(); });
     onSnapshot(collection(db, "sales"), (s) => { sales = s.docs.map(d => ({ id: d.id, ...d.data() })); window.refreshUI(); });
     onSnapshot(collection(db, "expenses"), (s) => { expenses = s.docs.map(d => ({ id: d.id, ...d.data() })); renderExpenses(); });
@@ -440,7 +448,7 @@
             if(s.method === 'credit') cred += s.total; else cash += s.total;
             return `<div class="card" style="border-left: 5px solid ${s.total < 0 ? (s.isCollection ? 'var(--success)' : 'red') : 'var(--accent)'};">
                 <div style="display:flex; justify-content:space-between;"><b>${s.cust}</b> <b>₹${Math.round(s.total)}</b></div>
-                <small>${s.date} | ${s.method} ${s.isCollection ? '(Coll)' : ''} ${s.staff ? '| Staff: '+s.staff : ''}</small>
+                <small>${s.date} | ${s.method} ${s.isCollection ? '(Coll)' : ''} ${s.staff ? '| Staff: '+s.staff : ''} ${s.discount ? '| Disc: ₹'+s.discount : ''}</small>
                 <div class="no-print" style="margin-top:10px;">
                     <button class="btn-edit" onclick="editBill('${s.id}')">Edit</button>
                     <button class="btn-edit" onclick="reprintBill('${s.id}')">Print</button>
@@ -659,11 +667,13 @@
         const staff = document.getElementById('staff-name').value;
         if(!staff) return alert("ബില്ല് അടിക്കുന്ന സ്റ്റാഫിനെ തിരഞ്ഞെടുക്കുക!");
         const editId = document.getElementById('edit-bill-id').value;
+        const discountAmt = parseFloat(document.getElementById('bill-discount').value) || 0;
         const now = new Date();
         const saleData = {
             cust: document.getElementById('cust-name').value || "Cash Sale",
             phone: document.getElementById('cust-phone').value,
-            total: parseFloat(document.getElementById('cart-total').innerText),
+            total: parseFloat(document.getElementById('cart-total').innerText) - discountAmt, // ബില്ലിൽ നിന്നും ഡിസ്കൗണ്ട് കുറയ്ക്കുന്നു
+            discount: discountAmt, // ഡിസ്കൗണ്ട് തുക ഡാറ്റാബേസിലേക്ക് പ്രത്യേകം സേവ് ചെയ്യുന്നു
             method: document.getElementById('pay-method').value,
             staff: staff,
             items: cart,
@@ -802,6 +812,7 @@
 
             listDiv.innerHTML = filtered.map(s => {
                 let itemsSummary = s.items ? s.items.map(it => `• ${it.name} (${it.qty} Qty) - ₹${it.total}`).join('<br>') : 'No items';
+                let discSummary = s.discount ? `<br><b style="color:green;">Discount Given: ₹${s.discount}</b>` : '';
                 
                 return `
                 <div class="card" style="border-left: 5px solid ${s.total < 0 ? 'var(--success)' : 'var(--accent)'}; margin-bottom:15px; padding:15px;">
@@ -815,6 +826,7 @@
                     <div style="font-size:0.9rem; margin:10px 0; background:#f8fafc; padding:10px; border-radius:8px; color:#475569; border:1px solid #e2e8f0; line-height:1.5;">
                         <b style="color:var(--primary);">വാങ്ങിയ സാധനങ്ങൾ:</b><br>
                         ${itemsSummary}
+                        ${discSummary}
                     </div>
                     <div class="no-print">
                         <button class="btn-edit" onclick="reprintBill('${s.id}')">🖨️ Re-Print Bill</button>
@@ -846,6 +858,10 @@
                     const buyPrice = product ? (product.buy || 0) : 0;
                     totalSalesProfit += (item.rate - buyPrice) * item.qty;
                 });
+                // ഡിസ്കൗണ്ട് നൽകിയിട്ടുണ്ടെങ്കിൽ ലാഭത്തിൽ നിന്നും അത് കുറയ്ക്കുന്നു
+                if(s.discount) {
+                    totalSalesProfit -= s.discount;
+                }
             }
         });
         const monthExp = expenses.filter(e => e.month === monthKey).reduce((a, b) => a + b.amt, 0);
@@ -859,8 +875,8 @@
     };
 
     window.exportToExcel = () => {
-        let csv = "Date,Customer,Amount,Method,Staff\n";
-        sales.forEach(s => { csv += `${s.date},${s.cust},${s.total},${s.method},${s.staff || ''}\n`; });
+        let csv = "Date,Customer,Amount,Discount,Method,Staff\n";
+        sales.forEach(s => { csv += `${s.date},${s.cust},${s.total},${s.discount || 0},${s.method},${s.staff || ''}\n`; });
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -875,9 +891,25 @@
         document.getElementById('print-bill-meta').innerText = `Cust: ${s.cust} | Staff: ${s.staff || ''} | Date: ${s.date} ${s.time || ''}`;
         const staffDisplay = document.getElementById('bill-staff-display');
         if (staffDisplay) staffDisplay.innerText = s.staff ? "Billed by: " + s.staff : "";
+        
+        // ഡിസ്കൗണ്ട് ഉണ്ടെങ്കിൽ അത് പ്രിന്റിൽ കാണിക്കാൻ
+        if(s.discount) {
+            document.getElementById('display-discount-amt').innerText = s.discount;
+            document.getElementById('display-discount-row').style.display = 'block';
+        } else {
+            document.getElementById('display-discount-row').style.display = 'none';
+        }
+
         cart = [...s.items];
         window.updateCartUI();
-        setTimeout(() => { window.print(); }, 500);
+        
+        // റീപ്രിന്റ് ചെയ്യുമ്പോൾ കാർട്ട് ടോട്ടൽ മാറിയാലും ഔട്ട്സ്റ്റാൻഡിങ് കൃത്യമായി കാണിക്കാൻ ഡിസ്കൗണ്ട് കുറയ്ക്കുന്നു
+        setTimeout(() => { 
+            const currentBill = parseFloat(document.getElementById('cart-total').innerText) || 0;
+            const finalOut = currentBill - (s.discount || 0);
+            document.getElementById('total-outstanding').innerText = Math.round(finalOut);
+            window.print(); 
+        }, 600);
     };
 
     window.editBill = (id) => {
@@ -888,15 +920,14 @@
         document.getElementById('cust-name').value = s.cust;
         document.getElementById('cust-phone').value = s.phone || "";
         document.getElementById('pay-method').value = s.method;
+        document.getElementById('bill-discount').value = s.discount || 0;
         if(s.staff) document.getElementById('staff-name').value = s.staff;
         
-        // എഡിറ്റ് ചെയ്യുമ്പോൾ ടോട്ടൽ ഔട്ട്സ്റ്റാൻഡിങ് കണക്ക് അപ്ഡേറ്റ് ചെയ്യാൻ വേണ്ടി പഴയ ബാലൻസ് കണ്ടെത്തുന്നു
         const name = s.cust;
         const bal = sales.filter(x => x.cust === name && x.method === 'credit').reduce((a, b) => a + b.total, 0);
         const coll = sales.filter(x => x.cust === name && (x.isCollection || x.isReturn)).reduce((a, b) => a + Math.abs(b.total), 0);
         const currentBillAmtInDatabase = s.total; 
         
-        // എഡിറ്റ് ചെയ്യുന്ന ബില്ലിന്റെ തുക ഓൾഡ് ബാലൻസിൽ വീണ്ടും ഇരട്ടിയാവാതിരിക്കാൻ അത് കുറയ്ക്കുന്നു (ക്രെഡിറ്റ് ബില്ലാണെങ്കിൽ മാത്രം)
         let oldBalCalculated = bal - coll;
         if(s.method === 'credit') {
             oldBalCalculated = oldBalCalculated - currentBillAmtInDatabase;
@@ -941,6 +972,7 @@
         if(!s || !s.phone) return alert("ഫോൺ നമ്പർ ഇല്ല!");
         let msg = `*IQRA MARKETING*%0A----------%0A${s.cust} | ${s.date}%0A----------%0A`;
         s.items.forEach(it => { msg += `${it.name} x ${it.qty} = ${it.total}%0A`; });
+        if(s.discount) msg += `Discount: - ₹${s.discount}%0A`;
         msg += `----------%0A*Total: ₹${Math.round(s.total)}*%0Aനന്ദി.`;
         window.open(`https://wa.me/${s.phone}?text=${msg}`, '_blank');
     };
@@ -950,17 +982,33 @@
     window.updateTotalWithOldBal = () => {
         const currentBill = parseFloat(document.getElementById('cart-total').innerText) || 0;
         const oldBal = parseFloat(document.getElementById('display-old-bal').innerText) || 0;
-        const totalOut = Math.round(currentBill + oldBal);
+        const discountAmt = parseFloat(document.getElementById('bill-discount').value) || 0;
+        
+        // ടോട്ടൽ തുകയിൽ നിന്നും ഡിസ്കൗണ്ട് കുറയ്ക്കുന്നു
+        const totalOut = Math.round((currentBill + oldBal) - discountAmt);
+        
         if(document.getElementById('total-outstanding')) {
             document.getElementById('total-outstanding').innerText = totalOut;
         }
+
+        // പ്രിന്റ് പ്രിവ്യൂവിൽ ഡിസ്കൗണ്ട് തുക ലൈവായി അപ്ഡേറ്റ് ചെയ്യാൻ
+        if(discountAmt > 0) {
+            document.getElementById('display-discount-amt').innerText = discountAmt;
+            document.getElementById('display-discount-row').style.display = 'block';
+        } else {
+            document.getElementById('display-discount-row').style.display = 'none';
+        }
+
         window.calculateChange(); 
     };
 
     window.calculateChange = () => {
         const billTotal = parseFloat(document.getElementById('cart-total').innerText) || 0;
+        const discountAmt = parseFloat(document.getElementById('bill-discount').value) || 0;
+        const finalBillAmt = billTotal - discountAmt; // ബാക്കി തുക കണക്കാക്കുമ്പോഴും ഡിസ്കൗണ്ട് പരിഗണിക്കുന്നു
+        
         const received = parseFloat(document.getElementById('cash-received').value) || 0;
-        const change = received - billTotal;
+        const change = received - finalBillAmt;
         const changeDisplay = document.getElementById('balance-change');
         
         if (changeDisplay) {
