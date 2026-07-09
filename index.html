@@ -297,7 +297,6 @@
             </div>
         </div>
 
-        <!-- പുതിതായി ചേർത്ത ക്രെഡിറ്റ് ലെഡ്ജർ പേജ് -->
         <div id="sec-credit-list" style="display:none">
             <div class="card">
                 <h3>ക്രെഡിറ്റ് കസ്റ്റമേഴ്സ് ലിസ്റ്റ് (Credit Ledger)</h3>
@@ -451,7 +450,6 @@
             </div>`;
         }).join('');
 
-        // ഡാറ്റാബേസിലുള്ള എല്ലാ കസ്റ്റമേഴ്സിന്റെയും ആകെ ലിസ്റ്റിൽ നിന്നുള്ള കണക്ക് അപ്ഡേറ്റ് ചെയ്യുന്നു
         let calculatedTotalCreditOutstanding = 0;
         const allUniqueCustomers = [...new Set(sales.map(s => s.cust))];
         allUniqueCustomers.forEach(custName => {
@@ -471,7 +469,6 @@
         window.renderCreditLedger();
     };
 
-    // പുതിയ ക്രെഡിറ്റ് ലെഡ്ജർ പേജിലെ ഡാറ്റാ റെൻഡറിങ് ഫങ്ഷൻ
     window.renderCreditLedger = () => {
         const tbody = document.getElementById('credit-ledger-body');
         if(!tbody) return;
@@ -484,14 +481,10 @@
             if(name === "Cash Sale") return;
             if(searchTxt && !name.toLowerCase().includes(searchTxt)) return;
             
-            // ആകെ എടുത്ത കടം
             const creditTaken = sales.filter(s => s.cust === name && s.method === 'credit').reduce((a, b) => a + b.total, 0);
-            // കളക്ഷൻ തന്നതും റിട്ടേൺ ചെയ്തതുമായ ആകെ തുക
             const collectedAmount = sales.filter(s => s.cust === name && (s.isCollection || s.isReturn)).reduce((a, b) => a + Math.abs(b.total), 0);
-            // ഫൈനൽ ബാലൻസ്
             const currentBalance = creditTaken - collectedAmount;
             
-            // ഇനി കടം ബാക്കിയുണ്ടെങ്കിൽ (അല്ലെങ്കിൽ പഴയ കണക്കുകൾ ഉണ്ടെങ്കിൽ) മാത്രം ലിസ്റ്റിൽ കാണിക്കുന്നു
             if(creditTaken > 0 || collectedAmount > 0) {
                 html += `<tr>
                     <td><b>${name}</b></td>
@@ -896,6 +889,27 @@
         document.getElementById('cust-phone').value = s.phone || "";
         document.getElementById('pay-method').value = s.method;
         if(s.staff) document.getElementById('staff-name').value = s.staff;
+        
+        // എഡിറ്റ് ചെയ്യുമ്പോൾ ടോട്ടൽ ഔട്ട്സ്റ്റാൻഡിങ് കണക്ക് അപ്ഡേറ്റ് ചെയ്യാൻ വേണ്ടി പഴയ ബാലൻസ് കണ്ടെത്തുന്നു
+        const name = s.cust;
+        const bal = sales.filter(x => x.cust === name && x.method === 'credit').reduce((a, b) => a + b.total, 0);
+        const coll = sales.filter(x => x.cust === name && (x.isCollection || x.isReturn)).reduce((a, b) => a + Math.abs(b.total), 0);
+        const currentBillAmtInDatabase = s.total; 
+        
+        // എഡിറ്റ് ചെയ്യുന്ന ബില്ലിന്റെ തുക ഓൾഡ് ബാലൻസിൽ വീണ്ടും ഇരട്ടിയാവാതിരിക്കാൻ അത് കുറയ്ക്കുന്നു (ക്രെഡിറ്റ് ബില്ലാണെങ്കിൽ മാത്രം)
+        let oldBalCalculated = bal - coll;
+        if(s.method === 'credit') {
+            oldBalCalculated = oldBalCalculated - currentBillAmtInDatabase;
+        }
+        
+        const oldBal = Math.round(oldBalCalculated);
+        if(document.getElementById('display-old-bal')) {
+            document.getElementById('display-old-bal').innerText = oldBal;
+        }
+        if(document.getElementById('cust-balance')) {
+            document.getElementById('cust-balance').innerText = "Bal: ₹" + oldBal;
+        }
+
         cart = [...s.items];
         window.updateCartUI();
         document.getElementById('bill-title').innerText = "Edit Invoice";
